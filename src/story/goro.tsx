@@ -83,6 +83,8 @@ export function PanelField(p: FieldProps) {
   })
   const [idleHint, setIdleHint] = useState(false)
   const [dragging, setDragging] = useState<string | null>(null)
+  // 拖动中靠近对的缝：两边一起亮起来（共振），玩家拖着画在场上找「哪条边有反应」
+  const [near, setNear] = useState<{ a: string; ka: string; b: string; kb: string } | null>(null)
   const [burst, setBurst] = useState<{ x: number; y: number; vertical: boolean } | null>(null)
   const [kick, setKick] = useState(false)
   const prevFusedCount = useRef(0)
@@ -265,6 +267,41 @@ export function PanelField(p: FieldProps) {
       ids.forEach((id) => { if (n[id]) n[id] = { x: n[id].x + ddx, y: n[id].y + ddy } })
       return n
     })
+    // 共振侦测：这组画的每条缝，是不是靠近了能跟它对上的那条边
+    const ddx = nx - pos[d.id].x
+    const ddy = ny - pos[d.id].y
+    let found: { a: string; ka: string; b: string; kb: string } | null = null
+    outer: for (const mid of ids) {
+      const gm = p.panels.find((x) => x.id === mid)
+      if (!gm || gm.hide) continue
+      const pm0 = pos[mid] ?? { x: gm.x, y: gm.y }
+      const pm = { x: pm0.x + ddx, y: pm0.y + ddy }
+      const hm = panelH(gm, rect)
+      for (const go of p.panels) {
+        if (ids.includes(go.id) || go.hide) continue
+        const po = pos[go.id]
+        if (!po) continue
+        const ho = panelH(go, rect)
+        for (const ptM of gm.ports ?? []) {
+          if (fusedKeys.has(`${mid}:${ptM.key}`)) continue
+          for (const ptO of go.ports ?? []) {
+            if (ptO.key !== ptM.key || ptO.side !== complement(ptM.side)) continue
+            if (fusedKeys.has(`${go.id}:${ptO.key}`)) continue
+            let ddx2 = 0, ddy2 = 0
+            if (ptM.side === 'r' || ptM.side === 'l') {
+              ddx2 = ptM.side === 'r' ? po.x - (pm.x + gm.w) : (po.x + go.w) - pm.x
+              ddy2 = (po.y + (ptO.at / 100) * ho) - (pm.y + (ptM.at / 100) * hm)
+              if (Math.abs(ddx2) < 14 && Math.abs(ddy2) < 18) { found = { a: mid, ka: ptM.key, b: go.id, kb: ptO.key }; break outer }
+            } else {
+              ddy2 = ptM.side === 'b' ? po.y - (pm.y + hm) : (po.y + ho) - pm.y
+              ddx2 = (po.x + (ptO.at / 100) * go.w) - (pm.x + (ptM.at / 100) * gm.w)
+              if (Math.abs(ddx2) < 16 && Math.abs(ddy2) < 14) { found = { a: mid, ka: ptM.key, b: go.id, kb: ptO.key }; break outer }
+            }
+          }
+        }
+      }
+    }
+    setNear(found)
   }
 
   // ---- 自由模式：磁吸拼画——两幅画的边靠近、接口对得上，就吸合连通 ----
@@ -354,6 +391,7 @@ export function PanelField(p: FieldProps) {
     const d = drag.current
     drag.current = null
     setDragging(null)
+    setNear(null)
     if (!d || !rootRef.current) return
     const rect = rootRef.current.getBoundingClientRect()
 
@@ -498,14 +536,17 @@ export function PanelField(p: FieldProps) {
             style={{ left: `${pp.x}%`, top: `${pp.y}%`, width: `${g.w}%`, aspectRatio: '3/2',
               animationDelay: `${gi * 0.16}s` }}>
             <div className="goro-img" key={g.img} style={{ backgroundImage: `url(${g.img})` }} />
-            {/* 接口漏光：被点名的画从零秒开始渗光；静置后全场接口呼吸 */}
-            {(idleHint || hintedPanel) && (g.ports ?? []).filter((pt) => !fusedKeys.has(`${g.id}:${pt.key}`)).map((pt, i) => (
-              <div key={i} className={`goro-port side-${pt.side} ${idleHint ? '' : 'leak'}`} style={
+            {/* 接口漏光：被点名的画从零秒开始渗光；静置后全场接口呼吸；拖动靠近时共振增亮 */}
+            {(idleHint || hintedPanel || dragging) && (g.ports ?? []).filter((pt) => !fusedKeys.has(`${g.id}:${pt.key}`)).map((pt, i) => {
+              const isNear = !!near && ((near.a === g.id && near.ka === pt.key) || (near.b === g.id && near.kb === pt.key))
+              return (
+              <div key={i} className={`goro-port side-${pt.side} ${idleHint ? '' : 'leak'} ${isNear ? 'near' : ''}`} style={
                 pt.side === 'l' || pt.side === 'r'
                   ? { [pt.side === 'l' ? 'left' : 'right']: 0, top: `${pt.at}%` }
                   : { [pt.side === 't' ? 'top' : 'bottom']: 0, left: `${pt.at}%` } as React.CSSProperties
               } />
-            ))}
+              )
+            })}
             {/* 连合缝的光 */}
             {(g.ports ?? []).filter((pt) => fusedKeys.has(`${g.id}:${pt.key}`)).map((pt, i) => (
               <div key={i} className={`goro-seam side-${pt.side}`} style={
@@ -531,6 +572,22 @@ export function PanelField(p: FieldProps) {
           ))}
         </svg>
       )}
+
+      {/* 共振光桥：拖动靠近时，两条对的缝之间拉起一根亮线——「就是这里」 */}
+      {near && !zoomId && (() => {
+        const ga = p.panels.find((g) => g.id === near.a)
+        const gb = p.panels.find((g) => g.id === near.b)
+        const pa = ga?.ports?.find((pt) => pt.key === near.ka)
+        const pb = gb?.ports?.find((pt) => pt.key === near.kb)
+        if (!ga || !gb || !pa || !pb) return null
+        const A = portPos(ga, pa)
+        const B = portPos(gb, pb)
+        return (
+          <svg className="goro-nearline" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <line x1={A.x} y1={A.y} x2={B.x} y2={B.y} />
+          </svg>
+        )
+      })()}
 
       {/* 圆圈提示：画内这里可以点（场级，跟随画的位置） */}
       {!zoomId && (p.rings ?? []).map((rg, i) => {
