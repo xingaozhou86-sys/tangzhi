@@ -35,6 +35,20 @@ export function PaperBit({ x, y, size = 1 }: { x: number; y: number; size?: numb
   )
 }
 
+// 五格糖纸收集条：挂在屏幕下缘，收到一角就亮起一格；最后一格是半张
+export function WrapperStrip({ filled, halfLast }: { filled: number; halfLast?: boolean }) {
+  return (
+    <div className="wrapper-strip">
+      {[0, 1, 2, 3, 4].map((i) => (
+        <div
+          key={i}
+          className={`ws ${i < filled ? 'got' : ''} ${i < filled && halfLast && i === 4 ? 'half' : ''} ${i === filled - 1 ? 'fresh' : ''}`}
+        />
+      ))}
+    </div>
+  )
+}
+
 // 通用拖拽：给子元素 onPointerDown，回调移动量（% 坐标），松手回调
 export function usePercentDrag(
   rootRef: React.RefObject<HTMLDivElement | null>,

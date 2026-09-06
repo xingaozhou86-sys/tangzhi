@@ -6,6 +6,7 @@ import Act4 from '../act4/Act4'
 import Ch5Goro from './Ch5Goro'
 import Ch6Goro from './Ch6Goro'
 import { ReturnLeg, Finale } from './Finale'
+import { WrapperStrip } from './bits'
 
 // ------------------------------------------------------------
 // 《情况属实》正片总装：标题 → 六幕（倒叙）→ 回程 → 终幕 → 完
@@ -60,7 +61,7 @@ export default function Story() {
       <div className="story-title">
         <div className="bg" style={{ backgroundImage: 'url(/story/a6.webp)' }} />
         <div className="inner">
-          <h1>情况属实</h1>
+          <h1>情况属实<span className="seal">糖纸</span></h1>
           <div className="sub">一个人，五十五年</div>
           <button className="story-start" onClick={() => setScreen('card')}>开 始</button>
         </div>
@@ -89,6 +90,9 @@ export default function Story() {
       {screen === 'play' && idx === 5 && <Ch6Goro key="a6" onDone={done} />}
       {screen === 'play' && idx === 6 && <ReturnLeg key="rt" onDone={done} />}
       {screen === 'play' && idx === 7 && <Finale key="fn" onDone={done} />}
+      {screen === 'play' && (
+        <WrapperStrip filled={idx >= 6 ? 5 : Math.min(idx, 4)} halfLast={idx >= 6} />
+      )}
       <div className={`story-card ${cardOn ? 'on' : ''}`}>
         <div className="t">{CARDS[idx][0]}</div>
         <div className="y">{CARDS[idx][1]}</div>
