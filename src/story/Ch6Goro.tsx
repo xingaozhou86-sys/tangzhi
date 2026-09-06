@@ -106,6 +106,23 @@ export default function Ch6Goro({ onDone }: { onDone: () => void }) {
   const wrapperOut = phase === 'tear' || torn
 
   const overlay = (id: string, zoomed: boolean) => {
+    if (id === 'village') {
+      // 你把那一半推给她之后：村子那头，一扇窗悄悄亮了——跨画的回声
+      if (phase === 'give' || phase === 'keep' || phase === 'done') {
+        return (
+          <>
+            <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none',
+              animation: 'propIn 2.6s ease', mixBlendMode: 'screen',
+              background: 'radial-gradient(ellipse at 42% 46%, rgba(255,196,110,0.4), rgba(255,180,90,0) 68%)' }} />
+            <div style={{ position: 'absolute', left: '38%', top: '40%', width: '9%', height: '14%',
+              pointerEvents: 'none', animation: 'propIn 2.2s ease', borderRadius: 2,
+              background: 'radial-gradient(ellipse, rgba(255,226,160,0.95), rgba(255,200,110,0.35) 70%, rgba(255,200,110,0))',
+              filter: 'blur(0.5px)', boxShadow: '0 0 18px rgba(255,205,120,0.6)' }} />
+          </>
+        )
+      }
+      return null
+    }
     if (id !== 'store') return null
     if (!zoomed) {
       // 糖罐常驻流光：这幅小画上有一处一直在悄悄发亮

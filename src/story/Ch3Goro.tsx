@@ -8,6 +8,8 @@ import { CollectCard, PaperBit } from './bits'
 // 第三章 · 下岗（1998）
 // 三层画叠在同一处：1998 名单 → 1988 通报 → 1978 红榜。
 // 卷角在呼吸——拖开（或点一下卷角），就回到十年前。
+// 揭下来的旧年份不会消失：它落成桌上一幅小小的记忆，
+// 微微发暗，还可以再入画翻看。
 // 揭到底，他的名字在红榜第一行发光。他从红榜里走出来，
 // 自己走到厂门前。点锁，锁落，画面灰掉；
 // 门房窗台上的工作证翻开，里面是第三角糖纸。
@@ -90,6 +92,13 @@ export default function Ch3Goro({ onDone }: { onDone: () => void }) {
       hide: peeled >= 2 },
     { id: 'y1998', img: '/story/a3.webp', x: HOME.x, y: HOME.y, w: 50, zoomable: true,
       hide: peeled >= 1 },
+    // 揭下来的旧年份：落成桌上的小小记忆画，发暗，可再入画翻看
+    ...(peeled >= 1
+      ? [{ id: 'm1998', img: '/story/a3.webp', x: 74, y: 25, w: 22, zoomable: true } as GPanel]
+      : []),
+    ...(peeled >= 2
+      ? [{ id: 'm1988', img: '/act4/workshop.webp', x: 74, y: 2, w: 22, zoomable: true } as GPanel]
+      : []),
     { id: 'gate', img: '/story/a3-gate.webp', x: 70, y: 50, w: 28, zoomable: true },
   ]
 
@@ -156,6 +165,17 @@ export default function Ch3Goro({ onDone }: { onDone: () => void }) {
     if (id === 'y1998') return <Poster year={1998} zoomed={zoomed} curl={phase === 'peel' && peeled === 0} />
     if (id === 'y1988') return <Poster year={1988} zoomed={zoomed} curl={phase === 'peel' && peeled === 1} />
     if (id === 'y1978') return <Poster year={1978} zoomed={zoomed} glowName={peeled >= 2} />
+    if (id === 'm1998' || id === 'm1988') {
+      return (
+        <>
+          <Poster year={id === 'm1998' ? 1998 : 1988} zoomed={zoomed} />
+          {!zoomed && (
+            <div style={{ position: 'absolute', inset: 0, background: 'rgba(8,8,14,0.38)',
+              pointerEvents: 'none' }} />
+          )}
+        </>
+      )
+    }
     if (id === 'gate' && zoomed) {
       return (
         <>

@@ -6,12 +6,13 @@ import { CollectCard, PaperBit } from './bits'
 
 // ------------------------------------------------------------
 // 第五章 · 舞会（1985）—— 动词：转（堆叠翻转）
+// 开场桌上就有两幅画：礼堂，和角落一幅睡着的天台——发暗、安静。
 // 礼堂的收音机在呼吸（圆圈）。点一下，舞会转起来——
-// 全游戏第一次响起音乐；天台那幅画随后出现，被虚线框轻轻圈住：
-// 把礼堂整幅拖进那个框——画翻过去，跳舞的人变成天台上
-// 两把并排的椅子。天台角落靠着一幅更小的画（圆圈）：点它，
-// 进入 1978 的邮电所——把他当年没寄出的信往上轻轻一推（或点一下），
-// 寄掉。印台下压着第四角糖纸。
+// 全游戏第一次响起音乐；睡着的天台同时被照亮、醒来，
+// 被虚线框轻轻圈住：把礼堂整幅拖进那个框——画翻过去，
+// 跳舞的人变成天台上两把并排的椅子。天台角落靠着一幅更小的画
+// （圆圈）：点它，进入 1978 的邮电所——把他当年没寄出的信
+// 往上轻轻一推（或点一下），寄掉。印台下压着第四角糖纸。
 // ------------------------------------------------------------
 
 type Ch5Phase = 'hall' | 'merged' | 'post' | 'mailed' | 'ink' | 'collect' | 'done'
@@ -40,8 +41,9 @@ export default function Ch5Goro({ onDone }: { onDone: () => void }) {
     {
       ...HALL,
       img: inPost ? '/story/a5-post1978.webp' : merged ? '/story/a5-roof.webp' : '/story/a5.webp',
+      stackWith: musicOn && !merged ? 'roof' : undefined,   // 音乐没响之前，叠上去也不会翻
     },
-    ...(musicOn ? [{ ...ROOF, hide: merged }] : []),
+    { ...ROOF, hide: merged },                              // 天台从开场就在桌上，只是睡着
   ]
 
   const onFuse = (_a: string, _b: string, key: string) => {
@@ -109,6 +111,24 @@ export default function Ch5Goro({ onDone }: { onDone: () => void }) {
     : []
 
   const overlay = (id: string, zoomed: boolean) => {
+    if (id === 'roof') {
+      if (!musicOn) {
+        // 睡着的天台：发暗、安静，但你能看见它在那儿
+        return (
+          <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none',
+            background: 'rgba(6,7,12,0.5)', transition: 'background 2s ease' }} />
+        )
+      }
+      if (!merged) {
+        // 音乐响起的那一刻：天台被照亮、醒来
+        return (
+          <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none',
+            animation: 'propIn 2.2s ease', mixBlendMode: 'screen',
+            background: 'radial-gradient(ellipse at 50% 55%, rgba(255,200,120,0.4), rgba(255,180,90,0) 72%)' }} />
+        )
+      }
+      return null
+    }
     if (id !== 'hall') return null
     if (!musicOn) {
       // 收音机常驻微光：开场就有"这里能动"的信号
