@@ -1,0 +1,738 @@
+/* Reframe · 重读 — 画廊样式：暗色展厅 + 画框 + 纸面画芯 */
+
+:root {
+  --wall: #17140f; /* 展厅墙面：暖黑 */
+  --wall-2: #201b14; /* 卡片底：稍亮的暖黑 */
+  --paper: #f7f3ea; /* 卡纸 / 画芯 */
+  --ink: #191713; /* 画芯上的墨 */
+  --text: #e8e0cf; /* 墙面文字 */
+  --gold: #d9a41c;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--wall);
+  color: var(--text);
+  font-family: Georgia, 'Times New Roman', 'Songti SC', 'SimSun', serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 展厅暗角 */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 125% 95% at 50% 38%, transparent 52%, rgba(0, 0, 0, 0.55) 100%);
+  z-index: 1;
+}
+
+/* 墙面颗粒 */
+.paper-bg {
+  min-height: 100%;
+  background-image:
+    radial-gradient(rgba(232, 224, 207, 0.028) 1px, transparent 1px),
+    radial-gradient(rgba(232, 224, 207, 0.016) 1px, transparent 1px);
+  background-size: 22px 22px, 13px 13px;
+  background-position: 0 0, 7px 9px;
+}
+
+/* 章节氛围光（.PlayScreen 注入颜色） */
+.ambient {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+.reframe-h1 {
+  font-size: clamp(34px, 6vw, 56px);
+  letter-spacing: 0.12em;
+  margin: 0;
+  color: var(--text);
+  text-shadow: 0 0 26px rgba(217, 164, 28, 0.22);
+}
+
+.reframe-btn {
+  font-family: inherit;
+  cursor: pointer;
+  border: 1.5px solid rgba(232, 224, 207, 0.42);
+  background: transparent;
+  color: var(--text);
+  padding: 10px 26px;
+  font-size: 15px;
+  letter-spacing: 0.2em;
+  transition: border-color 0.15s, color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+.reframe-btn:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+  box-shadow: 0 0 14px rgba(217, 164, 28, 0.22);
+}
+.reframe-btn.primary {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+.reframe-btn.primary:hover {
+  background: var(--gold);
+  color: var(--wall);
+  box-shadow: 0 0 24px rgba(217, 164, 28, 0.45);
+}
+.reframe-btn:disabled {
+  pointer-events: none;
+}
+
+/* 画框 + 卡纸：画芯保持纸墨，挂在深色墙上 */
+.frame {
+  background: #0e0c09;
+  padding: 13px;
+  box-shadow:
+    0 26px 64px rgba(0, 0, 0, 0.62),
+    0 6px 18px rgba(0, 0, 0, 0.5),
+    inset 0 0 0 1px rgba(217, 164, 28, 0.35);
+}
+.mat {
+  background: var(--paper);
+  padding: 40px 56px;
+  display: flex;
+  box-shadow:
+    inset 0 0 0 1px rgba(25, 23, 19, 0.35),
+    inset 0 3px 12px rgba(25, 23, 19, 0.16);
+}
+
+/* 棋盘 */
+.board-wrap {
+  position: relative;
+  width: min(86vw, 470px);
+  aspect-ratio: 1;
+  user-select: none;
+}
+
+.board-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 14px;
+  width: 100%;
+  height: 100%;
+}
+
+/* 格子在纸面上，保持纸墨语言 */
+.cell {
+  position: relative;
+  background: rgba(25, 23, 19, 0.055);
+  border: 1.5px dashed rgba(25, 23, 19, 0.26);
+  cursor: pointer;
+  transition: box-shadow 0.12s;
+}
+.cell.drop-target {
+  box-shadow: inset 0 0 0 3px var(--gold);
+}
+.cell.click-target {
+  box-shadow: inset 0 0 0 3px rgba(25, 23, 19, 0.5);
+}
+
+.tile-layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border: 1.5px solid var(--ink);
+  background: var(--paper);
+  box-shadow: 3px 4px 0 rgba(25, 23, 19, 0.18);
+  touch-action: none;
+}
+.tile-layer.filter-layer {
+  inset: 5%;
+  opacity: 0.92;
+}
+.tile-layer.cover-layer {
+  inset: 0;
+  opacity: 0.97;
+  box-shadow: 4px 5px 0 rgba(25, 23, 19, 0.35);
+  cursor: grab;
+}
+.tile-layer.drag-source {
+  opacity: 0.35;
+}
+.tile-layer.selected {
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
+}
+
+/* 跨格连接线段 */
+.bridge {
+  position: absolute;
+  background: var(--ink);
+  border-radius: 3px;
+  pointer-events: none;
+  transition: background 0.3s, box-shadow 0.3s;
+}
+.bridge.lit {
+  background: var(--gold);
+  box-shadow: 0 0 10px 2px rgba(217, 164, 28, 0.55);
+}
+
+/* 卡住时的提示呼吸 */
+@keyframes btn-nudge {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(217, 164, 28, 0); }
+  50% { box-shadow: 0 0 0 5px rgba(217, 164, 28, 0.55); }
+}
+.btn-nudge {
+  animation: btn-nudge 1.8s ease-in-out infinite;
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+/* 入口 / 出口（在纸面卡纸上，保持墨色） */
+.terminal {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+  color: var(--ink);
+}
+.terminal .arrow {
+  font-size: 20px;
+  line-height: 1;
+}
+.terminal .bar {
+  background: var(--ink);
+  border-radius: 3px;
+}
+.terminal.lit .bar {
+  background: var(--gold);
+  box-shadow: 0 0 10px 2px rgba(217, 164, 28, 0.55);
+}
+.terminal.lit .arrow {
+  color: var(--gold);
+}
+
+/* 拖拽中的浮动块 */
+.drag-ghost {
+  position: fixed;
+  width: 110px;
+  height: 110px;
+  pointer-events: none;
+  z-index: 50;
+  transform: translate(-50%, -50%) rotate(-4deg);
+  box-shadow: 8px 10px 0 rgba(0, 0, 0, 0.45);
+  border: 1.5px solid var(--ink);
+}
+
+/* 托盘（在深色墙面上） */
+.tray {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 18px;
+  border: 1.5px dashed rgba(232, 224, 207, 0.3);
+  background: rgba(232, 224, 207, 0.03);
+  min-height: 96px;
+  transition: box-shadow 0.12s;
+}
+.tray.drop-target {
+  box-shadow: inset 0 0 0 3px var(--gold);
+}
+.tray-item {
+  width: 84px;
+  height: 84px;
+  cursor: grab;
+  touch-action: none;
+}
+.tray-item.selected {
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
+}
+.tray-label {
+  font-size: 13px;
+  letter-spacing: 0.25em;
+  opacity: 0.65;
+  color: var(--text);
+  writing-mode: vertical-rl;
+}
+
+/* 过关卡片 */
+.win-veil {
+  position: fixed;
+  inset: 0;
+  background: rgba(12, 10, 7, 0.78);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 40;
+  animation: veil-in 0.35s ease-out;
+}
+@keyframes veil-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.win-card {
+  background: var(--wall-2);
+  border: 1.5px solid rgba(217, 164, 28, 0.65);
+  box-shadow:
+    0 0 42px rgba(217, 164, 28, 0.16),
+    0 18px 50px rgba(0, 0, 0, 0.6);
+  padding: 40px 48px;
+  text-align: center;
+  max-width: min(88vw, 430px);
+}
+
+/* 点亮线条的呼吸 */
+@keyframes lit-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.75; }
+}
+.reframe-lit-pulse {
+  animation: lit-pulse 2.4s ease-in-out infinite;
+}
+
+/* 标题金色菱形的呼吸 */
+@keyframes gold-breathe {
+  0%, 100% { opacity: 0.7; filter: drop-shadow(0 0 2px rgba(217, 164, 28, 0.3)); }
+  50% { opacity: 1; filter: drop-shadow(0 0 9px rgba(217, 164, 28, 0.85)); }
+}
+.gold-breathe {
+  animation: gold-breathe 2.6s ease-in-out infinite;
+}
+
+/* 展厅序章：笔记残页逐行浮现 */
+@keyframes intro-line-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 0.92; transform: translateY(0); }
+}
+.intro-line {
+  opacity: 0;
+  color: var(--text);
+  animation: intro-line-in 0.9s ease-out forwards;
+}
+
+.level-tag {
+  font-size: 13px;
+  letter-spacing: 0.35em;
+  opacity: 0.6;
+}
+.rule-line {
+  font-size: 16px;
+  letter-spacing: 0.06em;
+}
+.hint-box {
+  font-size: 13.5px;
+  line-height: 1.8;
+  border-left: 3px solid var(--gold);
+  padding: 4px 14px;
+  background: rgba(217, 164, 28, 0.09);
+  text-align: left;
+  max-width: min(86vw, 470px);
+}
+
+/* ===== 演出层 ===== */
+
+/* 金光沿线逐节点浮现（animation-delay 由 BFS 距离驱动） */
+@keyframes lit-glow-in {
+  from { opacity: 0; }
+  to { opacity: 0.55; }
+}
+.lit-glow {
+  opacity: 0;
+  animation: lit-glow-in 0.5s ease-out forwards, lit-pulse 2.4s ease-in-out 0.6s infinite;
+}
+
+/* 跨格桥接段的点亮过渡 */
+.bridge,
+.terminal .bar {
+  transition: background 0.35s, box-shadow 0.35s;
+}
+
+/* 落子：轻轻落定 */
+@keyframes tile-settle {
+  from { transform: scale(1.07); opacity: 0.55; }
+  to { transform: scale(1); opacity: 1; }
+}
+.tile-layer {
+  animation: tile-settle 0.18s ease-out;
+}
+.tray-item {
+  animation: tile-settle 0.18s ease-out;
+}
+/* 拖拽源不播落定动画 */
+.tile-layer.drag-source {
+  animation: none;
+}
+
+/* 过关：画框涌金 */
+.frame {
+  transition: box-shadow 0.6s;
+}
+.frame.solved {
+  box-shadow:
+    0 26px 64px rgba(0, 0, 0, 0.62),
+    0 0 46px rgba(217, 164, 28, 0.5),
+    0 0 120px rgba(217, 164, 28, 0.28),
+    inset 0 0 0 1px rgba(217, 164, 28, 0.9);
+}
+
+/* 过关卡片升起 */
+@keyframes card-rise {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.win-card {
+  animation: card-rise 0.55s cubic-bezier(0.2, 0.9, 0.25, 1.2);
+}
+
+/* 展品铭牌 */
+.plate {
+  display: inline-block;
+  border: 1px solid rgba(217, 164, 28, 0.32);
+  background: linear-gradient(rgba(217, 164, 28, 0.07), rgba(217, 164, 28, 0.025));
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(0, 0, 0, 0.25);
+  padding: 7px 20px;
+}
+
+/* 旋转平滑过渡 */
+.tile-layer > div {
+  transition: transform 0.16s ease-out;
+}
+
+/* 标题屏画框的呼吸光 */
+@keyframes title-glow {
+  0%, 100% { box-shadow: 0 18px 48px rgba(0,0,0,0.6), 0 0 16px rgba(217, 164, 28, 0.1), inset 0 0 0 1px rgba(217, 164, 28, 0.3); }
+  50% { box-shadow: 0 18px 48px rgba(0,0,0,0.6), 0 0 36px rgba(217, 164, 28, 0.32), inset 0 0 0 1px rgba(217, 164, 28, 0.55); }
+}
+.title-frame {
+  animation: title-glow 4.2s ease-in-out infinite;
+}
+
+/* ===== 体验重做：光 / 端子 / 盖章 / 教学 / 画廊墙 ===== */
+
+/* 点亮线段的亮芯（光真的流过来的感觉） */
+@keyframes lit-core-in {
+  from { opacity: 0; }
+  to { opacity: 0.95; }
+}
+.lit-core {
+  opacity: 0;
+  animation: lit-core-in 0.45s ease-out forwards;
+}
+
+/* 入口光源菱：常亮呼吸——"光从这里来" */
+.gem {
+  width: 15px;
+  height: 15px;
+  transform: rotate(45deg);
+  flex: none;
+}
+.src-gem {
+  background: var(--gold);
+  animation: src-pulse 1.7s ease-in-out infinite;
+}
+@keyframes src-pulse {
+  0%, 100% { box-shadow: 0 0 5px 1px rgba(217, 164, 28, 0.55); }
+  50% { box-shadow: 0 0 15px 4px rgba(217, 164, 28, 0.95); }
+}
+/* 出口空菱：未到达是空心——"光要到这里"；到达后灌金 */
+.snk-gem {
+  background: transparent;
+  border: 2px solid rgba(25, 23, 19, 0.55);
+}
+.terminal.lit .snk-gem {
+  background: var(--gold);
+  border-color: var(--gold);
+  box-shadow: 0 0 13px 3px rgba(217, 164, 28, 0.9);
+}
+.terminal {
+  gap: 5px;
+}
+.terminal .chip {
+  width: 11px;
+  height: 11px;
+  border: 1.2px solid #191713;
+  flex: none;
+}
+
+/* 过关盖章「通」：朱砂印，砸在画框角上 */
+.frame {
+  position: relative;
+}
+.seal-stamp {
+  position: absolute;
+  right: -16px;
+  bottom: -16px;
+  z-index: 30;
+  width: 76px;
+  height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 42px;
+  font-weight: bold;
+  font-family: 'Songti SC', 'SimSun', serif;
+  color: #b0361e;
+  border: 3px double #b0361e;
+  border-radius: 9px;
+  background: rgba(247, 243, 234, 0.55);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4), inset 0 0 10px rgba(176, 54, 30, 0.22);
+  transform: rotate(-12deg);
+  animation: stamp-in 0.4s cubic-bezier(0.2, 1.5, 0.4, 1) both;
+  pointer-events: none;
+}
+@keyframes stamp-in {
+  0% { opacity: 0; transform: rotate(-12deg) scale(2); }
+  55% { opacity: 1; transform: rotate(-12deg) scale(0.93); }
+  100% { opacity: 1; transform: rotate(-12deg) scale(1); }
+}
+/* 盖章时画框轻轻一顿 */
+@keyframes frame-bump {
+  0% { transform: translateY(0); }
+  35% { transform: translateY(3px); }
+  100% { transform: translateY(0); }
+}
+.frame.bump {
+  animation: frame-bump 0.32s ease-out;
+}
+
+/* 第一关教学手势：一块"被拖动的画"在两格之间循环示范 */
+.teach-ghost {
+  position: absolute;
+  z-index: 25;
+  pointer-events: none;
+  border: 2px solid var(--gold);
+  border-radius: 6px;
+  background: rgba(217, 164, 28, 0.16);
+  box-shadow: 0 0 16px rgba(217, 164, 28, 0.5);
+  animation: teach-drag 2.8s ease-in-out infinite;
+}
+@keyframes teach-drag {
+  0%   { left: var(--gx0); top: var(--gy0); transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+  12%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  30%  { left: var(--gx0); top: var(--gy0); transform: translate(-50%, -60%) scale(1.07); }
+  62%  { left: var(--gx1); top: var(--gy1); transform: translate(-50%, -60%) scale(1.07); }
+  78%  { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  90%  { opacity: 0; }
+  100% { left: var(--gx1); top: var(--gy1); opacity: 0; }
+}
+/* 教学气泡 */
+.teach-bubble {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  background: var(--gold);
+  color: var(--wall);
+  font-size: 12.5px;
+  letter-spacing: 0.08em;
+  padding: 6px 14px;
+  border-radius: 4px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+  animation: bubble-in 0.5s ease-out 0.4s both;
+  pointer-events: none;
+  z-index: 26;
+  white-space: nowrap;
+}
+.teach-bubble.center {
+  left: 50%;
+  top: -14px;
+}
+@keyframes bubble-in {
+  from { opacity: 0; transform: translate(-50%, -80%); }
+  to { opacity: 1; transform: translate(-50%, -100%); }
+}
+
+/* 目录画廊墙：每幅画一个小画框，通关的灌金 */
+.gallery-grid {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.gallery-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--text);
+  padding: 4px;
+}
+.gallery-item:disabled {
+  cursor: not-allowed;
+}
+.gallery-thumb {
+  width: 66px;
+  height: 66px;
+  border: 1.5px solid rgba(232, 224, 207, 0.35);
+  background: var(--paper);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+  transition: box-shadow 0.15s, border-color 0.15s, transform 0.15s;
+}
+.gallery-item:hover:not(:disabled) .gallery-thumb {
+  border-color: var(--gold);
+  transform: translateY(-2px);
+}
+.gallery-item.done .gallery-thumb {
+  border-color: var(--gold);
+  box-shadow: 0 0 13px rgba(217, 164, 28, 0.5), 0 4px 10px rgba(0, 0, 0, 0.4);
+}
+.gallery-item:disabled .gallery-thumb {
+  filter: grayscale(1) brightness(0.55);
+  opacity: 0.4;
+}
+.gallery-cap {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  opacity: 0.78;
+}
+
+/* ===== 穿画 · Passage：墙 / 入画 / 画中画 / 光 ===== */
+
+/* 墙上挂着的画 */
+.wpaint {
+  width: 220px;
+  cursor: grab;
+  touch-action: none;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.wpaint:hover {
+  transform: translateY(-4px);
+}
+.wpaint-inner {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  border: 10px solid #0e0c09;
+  outline: 1px solid rgba(217, 164, 28, 0.35);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.6), 0 4px 12px rgba(0, 0, 0, 0.45);
+  background: var(--paper);
+  overflow: hidden;
+}
+.wpaint-drop .wpaint-inner {
+  outline: 3px solid var(--gold);
+  box-shadow: 0 0 26px rgba(217, 164, 28, 0.5), 0 18px 42px rgba(0, 0, 0, 0.6);
+}
+.wpaint.drag-source {
+  opacity: 0.35;
+}
+.wpaint-name {
+  position: absolute;
+  left: 50%;
+  bottom: 6px;
+  transform: translateX(-50%);
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  color: rgba(25, 23, 19, 0.65);
+  pointer-events: none;
+}
+
+/* 咬不上：摇头 */
+@keyframes deny-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-7px); }
+  55% { transform: translateX(6px); }
+  80% { transform: translateX(-3px); }
+}
+.deny-shake {
+  animation: deny-shake 0.4s ease-out;
+}
+
+/* 合成画面 */
+.comp-frame {
+  max-width: 92vw;
+}
+
+/* 光粒：呼吸 + 发光 */
+@keyframes mote-pulse {
+  0%, 100% { opacity: 0.85; filter: drop-shadow(0 0 1.5px rgba(217, 164, 28, 0.8)); }
+  50% { opacity: 1; filter: drop-shadow(0 0 4px rgba(217, 164, 28, 1)); }
+}
+.mote {
+  animation: mote-pulse 1.5s ease-in-out infinite;
+}
+.goal-pulse {
+  animation: mote-pulse 1.8s ease-in-out infinite;
+  filter: drop-shadow(0 0 3px rgba(217, 164, 28, 0.9));
+}
+
+/* 咬合提示语 */
+.dock-toast {
+  margin-top: 22px;
+  font-size: 14px;
+  letter-spacing: 0.14em;
+  color: var(--gold);
+  text-shadow: 0 0 14px rgba(217, 164, 28, 0.35);
+  animation: toast-in 0.4s ease-out;
+}
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 入画：全景 */
+.zoom-veil {
+  position: fixed;
+  inset: 0;
+  background: rgba(12, 10, 7, 0.86);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 45;
+  animation: veil-in 0.3s ease-out;
+}
+@keyframes zoom-in {
+  from { opacity: 0; transform: scale(0.62); }
+  to { opacity: 1; transform: scale(1); }
+}
+.zoom-card {
+  animation: zoom-in 0.38s cubic-bezier(0.2, 0.9, 0.3, 1.15);
+}
+
+/* 画中画：挂在画里的小画（全景视角里可交互） */
+.subpaint {
+  position: absolute;
+  border: 4px solid #0e0c09;
+  outline: 1.5px solid rgba(217, 164, 28, 0.8);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5), 0 0 12px rgba(217, 164, 28, 0.25);
+  background: var(--paper);
+  cursor: grab;
+  touch-action: none;
+  overflow: hidden;
+  animation: subpaint-breathe 2.6s ease-in-out infinite;
+}
+@keyframes subpaint-breathe {
+  0%, 100% { box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5), 0 0 6px rgba(217, 164, 28, 0.18); }
+  50% { box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5), 0 0 18px rgba(217, 164, 28, 0.5); }
+}
+/* 小画被拽走后：空钩子 */
+.subpaint-empty {
+  position: absolute;
+  border: 2px dashed rgba(25, 23, 19, 0.4);
+  background: rgba(25, 23, 19, 0.05);
+}
+/* 墙上缩略的小画（不可交互） */
+.subpaint-thumb {
+  position: absolute;
+  border: 3px solid #0e0c09;
+  outline: 1px solid rgba(217, 164, 28, 0.5);
+  background: var(--paper);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* 指引圈：画中世界式的呼吸金圈（可咬合的位置） */
+@keyframes ring-pulse {
+  0%, 100% { opacity: 0.25; transform: scale(1); }
+  50% { opacity: 0.95; transform: scale(1.18); }
+}
+.hint-ring {
+  animation: ring-pulse 2.1s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+  filter: drop-shadow(0 0 2px rgba(217, 164, 28, 0.7));
+}
