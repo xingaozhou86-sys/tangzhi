@@ -1,71 +1,59 @@
 /* ------------------------------------------------------------
-   《糖纸》· 世界引擎视觉
-   整面墙就是屏幕：暖纸底、木框、虚线空框、漏光的缝
+   《糖纸》v3 · 视觉
+   整面墙就是屏幕：暖纸底、木框、漏光的缝、可以钻进去的画
    ------------------------------------------------------------ */
 .board-wrap {
   position: fixed;
   inset: 0;
-  display: grid;
-  place-items: center;
   overflow: hidden;
   user-select: none;
   -webkit-user-select: none;
   touch-action: none;
   background:
-    /* 顶部一盏暖灯 */
-    radial-gradient(75% 52% at 50% 6%, rgba(255, 214, 140, 0.20), rgba(255, 214, 140, 0) 62%),
-    /* 墙面主体的暖色过渡 */
-    linear-gradient(168deg, #241a0e 0%, #1c1409 38%, #16100a 68%, #100b06 100%);
+    radial-gradient(75% 52% at 50% 4%, rgba(255, 214, 140, 0.22), rgba(255, 214, 140, 0) 62%),
+    linear-gradient(168deg, #2a1e10 0%, #201709 38%, #1a1209 68%, #120c06 100%);
 }
-/* 纸纹：真实纤维纹理 + 水渍 + 旧照片斑 */
+/* 纸纹 + 水渍 + 旧斑 */
 .board-wrap::before {
   content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
+  z-index: 1;
   background:
     url(/tex/paper.png) 0 0 / 60vmin repeat,
-    radial-gradient(34% 26% at 12% 82%, rgba(64, 44, 22, 0.5), transparent 70%),
-    radial-gradient(28% 22% at 88% 14%, rgba(70, 50, 26, 0.42), transparent 70%),
-    radial-gradient(22% 30% at 84% 88%, rgba(46, 32, 16, 0.55), transparent 70%);
+    radial-gradient(34% 26% at 10% 84%, rgba(64, 44, 22, 0.5), transparent 70%),
+    radial-gradient(28% 22% at 90% 12%, rgba(70, 50, 26, 0.42), transparent 70%),
+    radial-gradient(22% 30% at 86% 90%, rgba(46, 32, 16, 0.55), transparent 70%);
   mix-blend-mode: overlay;
   opacity: 0.85;
 }
-/* 胶片暗角 + 极淡的斜纹纸理 */
+/* 胶片暗角 + 斜纹纸理 */
 .board-wrap::after {
   content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
+  z-index: 1;
   background:
-    radial-gradient(120% 100% at 50% 50%, transparent 55%, rgba(5, 3, 1, 0.72) 100%),
+    radial-gradient(125% 105% at 50% 50%, transparent 58%, rgba(5, 3, 1, 0.6) 100%),
     repeating-linear-gradient(63deg, rgba(230, 190, 120, 0.014) 0 2px, transparent 2px 26px);
 }
 
+/* 墙 = 整个屏幕 */
 .board {
-  position: relative;
-  width: min(94vw, 88vh);
-  aspect-ratio: 1 / 1;
-}
-/* 画框背后那块被灯照亮的墙 */
-.board::before {
-  content: '';
   position: absolute;
-  inset: -4.5%;
-  border-radius: 6px;
-  background:
-    radial-gradient(80% 60% at 50% 30%, rgba(120, 88, 48, 0.28), rgba(120, 88, 48, 0) 75%),
-    linear-gradient(180deg, rgba(58, 42, 22, 0.35), rgba(30, 21, 11, 0.28));
-  box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.35), 0 0 80px rgba(0, 0, 0, 0.3);
+  inset: 0;
+  z-index: 2;
 }
 
-/* 空画框：墙上淡淡的胶带痕，四角有钉眼 */
+/* 空框：墙上的胶带痕与钉眼，是很淡的邀请 */
 .slot {
   position: absolute;
-  border: 1.5px dashed rgba(238, 220, 176, 0.17);
+  border: 1.5px dashed rgba(238, 220, 176, 0.14);
   border-radius: 3px;
-  background: rgba(255, 226, 160, 0.025);
-  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.4), inset 0 0 4px rgba(0, 0, 0, 0.5);
+  background: rgba(255, 226, 160, 0.02);
+  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.38);
 }
 .slot::before, .slot::after {
   content: '';
@@ -73,13 +61,13 @@
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.55);
-  box-shadow: 0 1px 1px rgba(255, 235, 200, 0.14);
+  background: rgba(0, 0, 0, 0.5);
+  box-shadow: 0 1px 1px rgba(255, 235, 200, 0.12);
 }
-.slot::before { left: 6px; top: 6px; }
-.slot::after { right: 6px; top: 6px; }
+.slot::before { left: 8px; top: 8px; }
+.slot::after { right: 8px; top: 8px; }
 
-/* 画 */
+/* ---------- 画 ---------- */
 .pnl {
   position: absolute;
   border-radius: 2px;
@@ -96,12 +84,12 @@
   transition: none;
   cursor: grabbing;
   z-index: 12;
+  transform: rotate(1.3deg) scale(1.015);
   box-shadow:
     0 0 0 5px #2c2114,
     0 0 0 6px rgba(255, 232, 180, 0.22),
     0 34px 70px rgba(0, 0, 0, 0.75);
 }
-.pnl.gone { opacity: 0; pointer-events: none; }
 .pnl.born { animation: pnl-born 0.7s cubic-bezier(0.2, 0.9, 0.3, 1.2); }
 @keyframes pnl-born {
   from { transform: scale(0.72); opacity: 0; }
@@ -114,33 +102,94 @@
     0 0 46px rgba(255, 200, 110, 0.4),
     0 22px 44px rgba(0, 0, 0, 0.6);
 }
+.pnl:hover {
+  box-shadow:
+    0 0 0 5px #2c2114,
+    0 0 0 6px rgba(255, 232, 180, 0.16),
+    0 28px 54px rgba(0, 0, 0, 0.68);
+}
+
+/* 画芯：背景可连续变焦（background 过渡就是入画的镜头） */
 .pnl-art {
   position: absolute;
   inset: 0;
-  background-size: cover;
-  background-position: center;
   border-radius: 1px;
+  background-repeat: no-repeat;
+  box-shadow: inset 0 0 0 1px rgba(255, 230, 180, 0.16), inset 0 0 26px rgba(0, 0, 0, 0.28);
+  transition: background-size 0.62s cubic-bezier(0.3, 0.8, 0.3, 1),
+    background-position 0.62s cubic-bezier(0.3, 0.8, 0.3, 1),
+    filter 0.6s ease;
+  animation: art-drift 26s ease-in-out infinite alternate;
 }
-.pnl.dim .pnl-art { filter: brightness(0.5) saturate(0.65); }
+.pnl.drag .pnl-art { animation: none; }
+.pnl-art.fadeout {
+  z-index: 2;
+  animation: art-fadeout 0.85s ease forwards;
+  pointer-events: none;
+}
+@keyframes art-fadeout {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes art-drift {
+  from { transform: scale(1.008) translate(0.3%, 0.2%); }
+  to { transform: scale(1.04) translate(-0.4%, -0.3%); }
+}
+.pnl.dim .pnl-art { filter: brightness(0.48) saturate(0.62); }
+.pnl.dived { cursor: default; }
+
 .pnl-year {
   position: absolute;
-  left: 5%;
-  top: 5%;
-  font-size: clamp(13px, 1.7vmin, 20px);
+  left: 4%;
+  top: 4%;
+  z-index: 3;
+  font-size: clamp(13px, 1.9vmin, 22px);
   letter-spacing: 0.35em;
   color: rgba(255, 236, 200, 0.85);
   text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
   writing-mode: vertical-rl;
   pointer-events: none;
 }
-.pnl-year.in-zoom { font-size: clamp(16px, 2.4vmin, 28px); z-index: 3; }
 
-/* 画缝漏光 */
+/* 退回上一层的小月亮门 */
+.backchip {
+  position: absolute;
+  left: -14px;
+  top: -14px;
+  z-index: 6;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  line-height: 1;
+  color: rgba(255, 236, 190, 0.95);
+  background: radial-gradient(circle at 38% 32%, #3d2c16, #1d130a 72%);
+  box-shadow: 0 0 0 2px rgba(255, 226, 160, 0.35), 0 6px 16px rgba(0, 0, 0, 0.6);
+  cursor: pointer;
+  animation: chip-in 0.4s ease both;
+}
+.backchip:hover { box-shadow: 0 0 0 3px rgba(255, 226, 160, 0.6), 0 6px 18px rgba(0, 0, 0, 0.65); }
+.backchip.hot {
+  animation: chip-in 0.4s ease both, chip-hot 1.4s ease-in-out 0.4s infinite;
+}
+@keyframes chip-hot {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(255, 226, 160, 0.4), 0 0 10px rgba(255, 214, 140, 0.3), 0 6px 16px rgba(0, 0, 0, 0.6); }
+  50% { box-shadow: 0 0 0 3px rgba(255, 236, 190, 0.9), 0 0 22px rgba(255, 214, 140, 0.75), 0 6px 16px rgba(0, 0, 0, 0.6); }
+}
+@keyframes chip-in {
+  from { transform: scale(0.4); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* ---------- 画缝漏光 ---------- */
 .leak {
   position: absolute;
   pointer-events: none;
   opacity: 0.5;
   animation: leak-breathe 3.4s ease-in-out infinite;
+  z-index: 4;
 }
 .leak.side-l, .leak.side-r {
   top: 38%;
@@ -168,30 +217,36 @@
   50% { transform: scale(1.12); }
 }
 
-/* 圆圈提示：画中世界的那枚圆 */
+/* ---------- 圆圈提示：画中世界的那枚圆，常驻 ---------- */
 .ring {
   position: absolute;
-  width: 34px;
-  height: 34px;
-  margin: -17px 0 0 -17px;
-  border: 2px solid rgba(255, 232, 180, 0.9);
+  width: 44px;
+  height: 44px;
+  margin: -22px 0 0 -22px;
+  border: 2px solid rgba(255, 232, 180, 0.5);
   border-radius: 50%;
-  box-shadow: 0 0 14px rgba(255, 214, 140, 0.55), inset 0 0 8px rgba(255, 214, 140, 0.35);
-  animation: ring-pulse 2.3s ease-in-out infinite;
+  box-shadow: 0 0 12px rgba(255, 214, 140, 0.3), inset 0 0 8px rgba(255, 214, 140, 0.2);
+  animation: ring-pulse 2.6s ease-in-out infinite;
   pointer-events: none;
   z-index: 5;
 }
-.ring.in {
-  width: 52px;
-  height: 52px;
-  margin: 0;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  border-width: 2.5px;
+.ring.hot {
+  border-color: rgba(255, 236, 190, 0.95);
+  box-shadow: 0 0 18px rgba(255, 214, 140, 0.65), inset 0 0 10px rgba(255, 214, 140, 0.4);
+  animation-duration: 1.6s;
 }
+/* 可以钻进去的圆：环里还有一个环 */
+.ring.dive::after {
+  content: '';
+  position: absolute;
+  inset: 7px;
+  border: 1.5px dashed rgba(255, 232, 180, 0.65);
+  border-radius: 50%;
+  animation: ring-spin 9s linear infinite;
+}
+@keyframes ring-spin { to { transform: rotate(360deg); } }
 @keyframes ring-pulse {
-  0%, 100% { opacity: 0.35; scale: 0.86; }
+  0%, 100% { opacity: 0.5; scale: 0.88; }
   50% { opacity: 1; scale: 1.06; }
 }
 
@@ -200,21 +255,26 @@
   position: absolute;
   right: -3px;
   bottom: -3px;
-  width: 26px;
-  height: 26px;
-  background: linear-gradient(135deg, transparent 50%, rgba(255, 234, 190, 0.9) 50%);
+  width: 30px;
+  height: 30px;
+  background: linear-gradient(135deg, transparent 50%, rgba(255, 234, 190, 0.55) 50%);
   border-radius: 0 0 3px 0;
-  filter: drop-shadow(0 0 8px rgba(255, 220, 150, 0.6));
-  animation: ear-lift 1.8s ease-in-out infinite;
+  filter: drop-shadow(0 0 6px rgba(255, 220, 150, 0.35));
+  animation: ear-lift 2.2s ease-in-out infinite;
   pointer-events: none;
   z-index: 5;
+}
+.dogear.hot {
+  background: linear-gradient(135deg, transparent 50%, rgba(255, 238, 200, 0.95) 50%);
+  filter: drop-shadow(0 0 10px rgba(255, 220, 150, 0.7));
+  animation-duration: 1.3s;
 }
 @keyframes ear-lift {
   0%, 100% { transform: translate(0, 0); }
   50% { transform: translate(-3px, -3px); }
 }
 
-/* 连画的光路 */
+/* ---------- 光路 ---------- */
 .beams {
   position: absolute;
   inset: 0;
@@ -227,87 +287,15 @@
   stroke: rgba(255, 226, 160, 0.9);
   stroke-width: 0.45;
   filter: drop-shadow(0 0 1.6px rgba(255, 210, 130, 0.9));
-  animation: beam-in 1.7s ease-out forwards;
+  animation: beam-in 1.8s ease-out forwards;
 }
 @keyframes beam-in {
   0% { opacity: 0; }
   18% { opacity: 1; }
   100% { opacity: 0; }
 }
-
-/* 走过缝的人 */
-.walker {
-  position: absolute;
-  width: 3%;
-  aspect-ratio: 1 / 2.4;
-  margin-left: -1.5%;
-  margin-top: -3.6%;
-  z-index: 9;
-  pointer-events: none;
-  transition: left 1.9s linear, top 1.9s linear;
-  filter: drop-shadow(0 0 6px rgba(255, 230, 170, 0.7));
-}
-.walker::before {
-  content: '';
-  position: absolute;
-  left: 22%;
-  top: 0;
-  width: 56%;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: #1c130a;
-}
-.walker::after {
-  content: '';
-  position: absolute;
-  left: 12%;
-  bottom: 0;
-  width: 76%;
-  height: 76%;
-  border-radius: 46% 46% 30% 30%;
-  background: #1c130a;
-}
-
-/* 入画 */
-.zoom {
-  position: absolute;
-  inset: 0;
-  z-index: 30;
-  display: grid;
-  place-items: center;
-  background: rgba(10, 7, 4, 0.9);
-  animation: zoom-in 0.4s ease;
-  cursor: zoom-out;
-}
-@keyframes zoom-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-.zoom-frame {
-  position: relative;
-  width: 88%;
-  box-shadow:
-    0 0 0 6px #241a10,
-    0 0 0 7px rgba(255, 228, 170, 0.1),
-    0 30px 80px rgba(0, 0, 0, 0.8);
-  cursor: default;
-}
-.zoom-frame img {
-  display: block;
-  width: 100%;
-  border-radius: 1px;
-}
-.zoom-spot {
-  position: absolute;
-  cursor: pointer;
-  z-index: 2;
-}
-
-/* ---------- 手感：共振 / 接通 / 入画 / 呼吸 ---------- */
-
-/* 拖拽共振：两缝之间拉起的光须 */
 .beams line.res {
-  stroke: rgba(255, 234, 180, 0.85);
+  stroke: rgba(255, 234, 180, 0.8);
   stroke-width: 0.35;
   stroke-dasharray: 1.6 1.2;
   filter: drop-shadow(0 0 1.8px rgba(255, 216, 140, 0.95));
@@ -318,7 +306,6 @@
   to { stroke-dashoffset: -2.8; }
 }
 
-/* 共振中的两幅画：边框暖亮 */
 .pnl.resonant {
   box-shadow:
     0 0 0 5px #3a2a16,
@@ -326,11 +313,7 @@
     0 0 34px rgba(255, 206, 120, 0.5),
     0 22px 44px rgba(0, 0, 0, 0.6);
 }
-
-/* 连上瞬间：双框一齐爆亮一下 */
-.pnl.joined {
-  animation: joined-pulse 1.7s ease-out;
-}
+.pnl.joined { animation: joined-pulse 1.7s ease-out; }
 @keyframes joined-pulse {
   0% {
     box-shadow:
@@ -347,36 +330,7 @@
   }
 }
 
-/* 入画：从那幅画里长出来 */
-.zoom-frame {
-  animation: zoom-pop 0.5s cubic-bezier(0.2, 0.9, 0.26, 1.15);
-}
-@keyframes zoom-pop {
-  from { transform: scale(0.55) translateY(3%); opacity: 0.4; }
-  to { transform: scale(1) translateY(0); opacity: 1; }
-}
-
-/* 画是活的：极缓的呼吸微动 */
-.pnl-art {
-  animation: art-drift 26s ease-in-out infinite alternate;
-}
-.pnl.drag .pnl-art { animation: none; }
-@keyframes art-drift {
-  from { transform: scale(1.01) translate(0.4%, 0.3%); }
-  to { transform: scale(1.05) translate(-0.5%, -0.4%); }
-}
-
-/* 悬停微抬：画是可以拿的 */
-.pnl:hover {
-  box-shadow:
-    0 0 0 5px #2c2114,
-    0 0 0 6px rgba(255, 232, 180, 0.16),
-    0 28px 54px rgba(0, 0, 0, 0.68);
-}
-
-/* ---------- 空间感：连画桥 / 穿画 ---------- */
-
-/* 连上之后，两框之间的墙消失了 */
+/* ---------- 连画桥：连上之后，两框之间的墙消失 ---------- */
 .bridge {
   position: absolute;
   z-index: 6;
@@ -410,7 +364,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  animation: through-fly 1.2s cubic-bezier(0.24, 0.8, 0.3, 1) both;
+  animation: through-fly 1.15s cubic-bezier(0.24, 0.8, 0.3, 1) both;
   box-shadow: 0 0 0 6px #241a10, 0 40px 120px rgba(0, 0, 0, 0.9);
 }
 @keyframes through-fly {
@@ -420,24 +374,14 @@
   100% { transform: scale(1.14); opacity: 0; }
 }
 
-/* 画框内侧一道金线 */
-.pnl-art {
-  box-shadow: inset 0 0 0 1px rgba(255, 230, 180, 0.16), inset 0 0 26px rgba(0, 0, 0, 0.28);
-}
-
-/* 拖拽时的物理倾斜 */
-.pnl.drag {
-  transform: rotate(1.4deg) scale(1.02);
-}
-
-/* ---------- 他：常驻主角 ---------- */
+/* ---------- 他：站在画里的人 ---------- */
 .hero {
   position: absolute;
-  width: 3.4%;
+  width: 7%;
   aspect-ratio: 1 / 2.6;
-  margin-left: -1.7%;
-  margin-top: -4.4%;
-  z-index: 15;
+  margin-left: -3.5%;
+  margin-top: -9%;
+  z-index: 5;
   pointer-events: none;
   transition: left 0.85s cubic-bezier(0.35, 0.1, 0.3, 1), top 0.85s cubic-bezier(0.35, 0.1, 0.3, 1);
   filter: drop-shadow(0 0 7px rgba(255, 228, 165, 0.65));
@@ -463,12 +407,6 @@
   border-radius: 44% 44% 28% 28%;
   background: #150d06;
 }
-.hero.in {
-  width: 7%;
-  margin-left: -3.5%;
-  margin-top: -9%;
-  z-index: 4;
-}
 @keyframes hero-bob {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-2.5%); }
@@ -478,10 +416,10 @@
 .beacon {
   position: absolute;
   left: 50%;
-  top: 12%;
-  width: 10px;
-  height: 10px;
-  margin-left: -5px;
+  top: 8%;
+  width: 12px;
+  height: 12px;
+  margin-left: -6px;
   border-radius: 50%;
   background: radial-gradient(closest-side, rgba(255, 230, 165, 0.95), rgba(255, 210, 120, 0.25) 60%, transparent 75%);
   filter: blur(0.5px);

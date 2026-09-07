@@ -1,38 +1,68 @@
 import type { ChapterDef } from '../world/types'
 
 // ------------------------------------------------------------
-// 六章谜题数据。每条缝的 key 就是两幅画之间的"门"。
+// 《糖纸》v3 · 十一章谜题数据
+// 每一章是一条"钻进去 → 发现另一个空间 → 铺路让他走过去"的链。
+// 圆圈常驻画面：实圈 = 点它；双层虚线圈 = 钻进去。
 // ------------------------------------------------------------
 
 export const CH1: ChapterDef = {
   id: 'ch1', no: '壹', name: '报名', poem: '那一夜，他第一个写下名字。', where: '一九五七 · 夜校报名处',
   ambient: '/story/amb-city.mp3',
-  hero: { panel: 'booth', x: 68, y: 66 },
-  goal: 'hall',
+  hero: { panel: 'booth', x: 66, y: 68 },
+  goal: 'below',
   panels: [
     {
       id: 'booth', img: '/story/a1.webp', cell: 0,
-      edges: { r: 'lib-a', b: 'lib-b' },
+      edges: { b: 'lib-b' },
       spots: [
         { id: 'window', x: 28, y: 16, w: 26, h: 32 },
-        { id: 'desk', x: 56, y: 56, w: 32, h: 26 },
         { id: 'book', x: 24, y: 62, w: 26, h: 22 },
       ],
     },
   ],
   steps: [
-    { id: 's-win', cond: { kind: 'spot', panel: 'booth', spot: 'window' },
-      fx: { sfx: '/story/sfx-peel.mp3', spawn: { def: { id: 'hall', img: '/story/a1-hall.webp', cell: 2, edges: { l: 'lib-a' } }, cells: [2, 3, 1] } } },
-    { id: 's-desk', cond: { kind: 'spot', panel: 'booth', spot: 'desk' },
-      fx: { sfx: '/story/sfx-peel.mp3', spawn: { def: { id: 'below', img: '/story/a1-below.webp', cell: 3, edges: { t: 'lib-b' } }, cells: [3, 2, 1] } } },
-    { id: 'c-hall', cond: { kind: 'connect', a: 'booth', aside: 'r', b: 'hall' }, after: ['s-win'],
+    { id: 'd-win', cond: { kind: 'dive', panel: 'booth', spot: 'window' },
+      fx: { sfx: '/story/sfx-peel.mp3', pushView: { panel: 'booth', view: {
+        img: '/story/a1-hall.webp',
+        spots: [{ id: 'notice', x: 36, y: 28, w: 28, h: 28 }] } } } },
+    { id: 's-notice', cond: { kind: 'spot', panel: 'booth', spot: 'notice' }, after: ['d-win'],
+      fx: { sfx: '/story/sfx-peel.mp3', spawn: {
+        def: { id: 'below', img: '/story/a1-below.webp', cell: 2, edges: { t: 'lib-b' } },
+        cells: [2, 3, 1] } } },
+    { id: 'c-below', cond: { kind: 'connect', a: 'booth', aside: 'b', b: 'below' }, after: ['s-notice'],
       fx: { walk: true, sfx: '/story/sfx-chime.mp3' } },
-    { id: 'c-below', cond: { kind: 'connect', a: 'booth', aside: 'b', b: 'below' }, after: ['s-desk'],
+    { id: 's-book', cond: { kind: 'spot', panel: 'booth', spot: 'book' }, after: ['c-below'],
+      fx: { collect: true, done: true, glow: 'booth', sfx: '/story/sfx-chime.mp3' } },
+  ],
+}
+
+export const CHX1: ChapterDef = {
+  id: 'chx1', no: '贰', name: '学徒', poem: '师傅的手搭在他手上，铁就听话了。', where: '一九五八 · 机修车间',
+  ambient: '/sfx/factory.wav',
+  hero: { panel: 'lathe', x: 28, y: 74 },
+  goal: 'shop',
+  panels: [
+    {
+      id: 'lathe', img: '/story/b2-lathe.webp', cell: 0,
+      edges: { b: 'chang' },
+      spots: [{ id: 'paper', x: 56, y: 58, w: 24, h: 22 }],
+    },
+  ],
+  steps: [
+    { id: 'd-paper', cond: { kind: 'dive', panel: 'lathe', spot: 'paper' },
+      fx: { sfx: '/story/sfx-peel.mp3', pushView: { panel: 'lathe', view: {
+        img: '/story/b2-desk.webp',
+        spots: [{ id: 'gear', x: 36, y: 32, w: 28, h: 28 }] } } } },
+    { id: 's-gear', cond: { kind: 'spot', panel: 'lathe', spot: 'gear' }, after: ['d-paper'],
+      fx: { sfx: '/story/sfx-peel.mp3', spawn: {
+        def: { id: 'shop', img: '/act4/workshop.webp', cell: 2, edges: { t: 'chang' },
+          spots: [{ id: 'master', x: 58, y: 28, w: 24, h: 32 }] },
+        cells: [2, 3, 1] } } },
+    { id: 'c-shop', cond: { kind: 'connect', a: 'lathe', aside: 'b', b: 'shop' }, after: ['s-gear'],
       fx: { walk: true, sfx: '/story/sfx-chime.mp3' } },
-    { id: 'end', cond: { kind: 'auto' }, after: ['c-hall', 'c-below'],
-      fx: { glow: 'booth', sfx: '/story/sfx-chime.mp3' } },
-    { id: 's-book', cond: { kind: 'spot', panel: 'booth', spot: 'book' }, after: ['end'],
-      fx: { collect: true, done: true, sfx: '/story/sfx-chime.mp3' } },
+    { id: 's-master', cond: { kind: 'spot', panel: 'shop', spot: 'master' }, after: ['c-shop'],
+      fx: { glow: 'shop', done: true, sfx: '/story/sfx-chime.mp3' } },
   ],
 }
 
@@ -40,39 +70,68 @@ export const CH2: ChapterDef = {
   id: 'ch2', no: '叁', name: '门与窗', poem: '门通街巷，窗通远方。', where: '一九六〇 · 职工宿舍',
   ambient: '/story/amb-city.mp3',
   hero: { panel: 'room', x: 46, y: 72 },
-  goal: 'rest',
+  goal: 'windows',
   panels: [
     {
       id: 'room', img: '/story/a2-room.webp', cell: 0,
-      edges: { r: 'jie', b: 'yue' },
-      spots: [
-        { id: 'door', x: 68, y: 28, w: 18, h: 46 },
-        { id: 'window', x: 22, y: 20, w: 26, h: 28 },
-      ],
+      edges: { b: 'yue' },
+      spots: [{ id: 'door', x: 68, y: 28, w: 18, h: 46 }],
     },
   ],
   steps: [
-    { id: 's-door', cond: { kind: 'spot', panel: 'room', spot: 'door' },
-      fx: { sfx: '/story/sfx-peel.mp3', spawn: { def: { id: 'street', img: '/story/a2-street.webp', cell: 3, edges: { l: 'jie', b: 'fan' } }, cells: [3, 2, 1] } } },
-    { id: 's-win', cond: { kind: 'spot', panel: 'room', spot: 'window' },
+    { id: 'd-door', cond: { kind: 'dive', panel: 'room', spot: 'door' },
+      fx: { sfx: '/story/sfx-peel.mp3', pushView: { panel: 'room', view: {
+        img: '/story/a2-street.webp',
+        spots: [{ id: 'alley', x: 64, y: 18, w: 24, h: 44 }] } } } },
+    { id: 's-alley', cond: { kind: 'spot', panel: 'room', spot: 'alley' }, after: ['d-door'],
       fx: { sfx: '/story/sfx-peel.mp3', spawn: {
-        def: { id: 'windows', img: '/story/a2-windows.webp', cell: 1, edges: { t: 'yue' }, spots: [{ id: 'lantern', x: 56, y: 56, w: 20, h: 20 }] },
+        def: { id: 'windows', img: '/story/a2-windows.webp', cell: 1, edges: { t: 'yue' },
+          spots: [{ id: 'lantern', x: 52, y: 50, w: 24, h: 24 }] },
         cells: [1, 2, 3] } } },
-    { id: 's-lantern', cond: { kind: 'spot', panel: 'windows', spot: 'lantern' }, after: ['s-win'],
-      fx: { sfx: '/story/sfx-peel.mp3', spawn: { def: { id: 'rest', img: '/story/a2-restaurant.webp', cell: 2, edges: { t: 'fan' } }, cells: [2, 3, 1] } } },
-    { id: 'c-street', cond: { kind: 'connect', a: 'room', aside: 'r', b: 'street' }, after: ['s-door'],
+    { id: 'c-win', cond: { kind: 'connect', a: 'room', aside: 'b', b: 'windows' }, after: ['s-alley'],
       fx: { walk: true, sfx: '/story/sfx-chime.mp3' } },
-    { id: 'c-moon', cond: { kind: 'connect', a: 'room', aside: 'b', b: 'windows' }, after: ['s-win'],
-      fx: { sfx: '/story/sfx-chime.mp3' } },
-    { id: 'c-rest', cond: { kind: 'connect', a: 'street', aside: 'b', b: 'rest' }, after: ['s-lantern'],
+    { id: 'd-lantern', cond: { kind: 'dive', panel: 'windows', spot: 'lantern' }, after: ['c-win'],
+      fx: { sfx: '/story/sfx-peel.mp3', pushView: { panel: 'windows', view: {
+        img: '/story/a2-restaurant.webp',
+        spots: [{ id: 'table', x: 38, y: 50, w: 28, h: 26 }] } } } },
+    { id: 's-table', cond: { kind: 'spot', panel: 'windows', spot: 'table' }, after: ['d-lantern'],
+      fx: { glow: 'windows', collect: true, done: true, sfx: '/story/sfx-chime.mp3' } },
+  ],
+}
+
+export const CHX2: ChapterDef = {
+  id: 'chx2', no: '肆', name: '雨夜', poem: '一把伞，两个人，雨就小了。', where: '一九六一 · 书店檐下',
+  ambient: '/sfx/rain.wav',
+  hero: { panel: 'rain', x: 50, y: 78 },
+  goal: 'win',
+  panels: [
+    {
+      id: 'rain', img: '/story/b4-rain.webp', cell: 0,
+      spots: [{ id: 'eave', x: 6, y: 18, w: 24, h: 42 }],
+    },
+  ],
+  steps: [
+    { id: 'd-eave', cond: { kind: 'dive', panel: 'rain', spot: 'eave' },
+      fx: { sfx: '/story/sfx-peel.mp3', pushView: { panel: 'rain', view: {
+        img: '/story/b4-book.webp',
+        spots: [{ id: 'lamp', x: 54, y: 6, w: 26, h: 24 }] } } } },
+    { id: 's-lamp', cond: { kind: 'spot', panel: 'rain', spot: 'lamp' }, after: ['d-eave'],
+      fx: { sfx: '/story/sfx-chime.mp3',
+        swapView: { panel: 'rain', tint: 'brightness(1.2) sepia(0.25)' },
+        setEdges: { panel: 'rain', edges: { r: 'deng' } },
+        spawn: { def: { id: 'win', img: '/story/a2-windows.webp', cell: 2, edges: { l: 'deng' },
+          tint: 'brightness(0.8)',
+          spots: [{ id: 'her', x: 46, y: 38, w: 20, h: 28 }] },
+          cells: [2, 1, 3] } } },
+    { id: 'c-win', cond: { kind: 'connect', a: 'rain', aside: 'r', b: 'win' }, after: ['s-lamp'],
       fx: { walk: true, sfx: '/story/sfx-chime.mp3' } },
-    { id: 'end', cond: { kind: 'auto' }, after: ['c-street', 'c-moon', 'c-rest'],
-      fx: { glow: 'rest', collect: true, done: true, sfx: '/story/sfx-chime.mp3', walkPath: ['room', 'street', 'rest'] } },
+    { id: 's-her', cond: { kind: 'spot', panel: 'win', spot: 'her' }, after: ['c-win'],
+      fx: { glow: 'win', undim: 'win', done: true, sfx: '/story/sfx-chime.mp3' } },
   ],
 }
 
 export const CH3: ChapterDef = {
-  id: 'ch3', no: '伍', name: '年画', poem: '一年撕去一层，撕到一九七八。', where: '一九六六至七八 · 厂门口',
+  id: 'ch3', no: '伍', name: '年画', poem: '一年撕去一层，撕到一九七八。', where: '一九六一至七八 · 厂门口',
   ambient: '/story/amb-wind.mp3',
   hero: { panel: 'nianhua', x: 62, y: 78 },
   goal: 'gate',
@@ -86,7 +145,8 @@ export const CH3: ChapterDef = {
         { img: '/story/a3-1978.webp', edges: { r: 'bang' }, year: '一九七八' },
       ],
     },
-    { id: 'gate', img: '/story/a3-gate.webp', cell: 1, edges: { l: 'bang' } },
+    { id: 'gate', img: '/story/a3-gate.webp', cell: 1, edges: { l: 'bang' },
+      spots: [{ id: 'plaque', x: 36, y: 12, w: 28, h: 20 }] },
   ],
   steps: [
     { id: 'p1', cond: { kind: 'peel', panel: 'nianhua' }, fx: { sfx: '/story/sfx-tear.mp3' } },
@@ -94,8 +154,63 @@ export const CH3: ChapterDef = {
     { id: 'p3', cond: { kind: 'peel', panel: 'nianhua' }, after: ['p2'], fx: { sfx: '/story/sfx-tear.mp3' } },
     { id: 'c-gate', cond: { kind: 'connect', a: 'nianhua', aside: 'r', b: 'gate' }, after: ['p3'],
       fx: { walk: true, sfx: '/story/sfx-chime.mp3' } },
-    { id: 'end', cond: { kind: 'auto' }, after: ['c-gate'],
+    { id: 's-plaque', cond: { kind: 'spot', panel: 'gate', spot: 'plaque' }, after: ['c-gate'],
       fx: { glow: 'gate', collect: true, done: true, sfx: '/story/sfx-chime.mp3' } },
+  ],
+}
+
+export const CHX3: ChapterDef = {
+  id: 'chx3', no: '陆', name: '站台', poem: '红围巾挥了三下，车就开了。', where: '一九七八 · 火车站台',
+  ambient: '/sfx/train.wav',
+  hero: { panel: 'platform', x: 36, y: 74 },
+  goal: 'dawn',
+  panels: [
+    {
+      id: 'platform', img: '/story/b6-platform.webp', cell: 0,
+      edges: { r: 'liang' },
+      spots: [{ id: 'whistle', x: 28, y: 56, w: 22, h: 28 }],
+    },
+  ],
+  steps: [
+    { id: 'd-whistle', cond: { kind: 'dive', panel: 'platform', spot: 'whistle' },
+      fx: { sfx: '/story/sfx-peel.mp3', pushView: { panel: 'platform', view: {
+        img: '/story/fin-station.webp',
+        spots: [{ id: 'scarf', x: 54, y: 32, w: 22, h: 26 }] } } } },
+    { id: 's-scarf', cond: { kind: 'spot', panel: 'platform', spot: 'scarf' }, after: ['d-whistle'],
+      fx: { sfx: '/story/sfx-peel.mp3', spawn: {
+        def: { id: 'dawn', img: '/story/fin.webp', cell: 3, edges: { l: 'liang' },
+          spots: [{ id: 'sun', x: 42, y: 22, w: 22, h: 22 }] },
+        cells: [3, 2, 1] } } },
+    { id: 'c-dawn', cond: { kind: 'connect', a: 'platform', aside: 'r', b: 'dawn' }, after: ['s-scarf'],
+      fx: { walk: true, sfx: '/story/horn.mp3' } },
+    { id: 's-sun', cond: { kind: 'spot', panel: 'dawn', spot: 'sun' }, after: ['c-dawn'],
+      fx: { glow: 'dawn', done: true, sfx: '/story/sfx-chime.mp3' } },
+  ],
+}
+
+export const CHX4: ChapterDef = {
+  id: 'chx4', no: '捌', name: '婚礼', poem: '两根红烛，就算成了家。', where: '一九八〇 · 新房',
+  ambient: '/sfx/murmur.wav',
+  hero: { panel: 'wedding', x: 50, y: 80 },
+  panels: [
+    {
+      id: 'wedding', img: '/story/b8-wedding.webp', cell: 0,
+      spots: [{ id: 'door', x: 26, y: 6, w: 30, h: 32 }],
+    },
+  ],
+  steps: [
+    { id: 'd-door', cond: { kind: 'dive', panel: 'wedding', spot: 'door' },
+      fx: { sfx: '/story/sfx-peel.mp3', pushView: { panel: 'wedding', view: {
+        img: '/story/b8-room.webp',
+        spots: [
+          { id: 'candle', x: 58, y: 24, w: 22, h: 28 },
+          { id: 'xi', x: 42, y: 16, w: 16, h: 16 },
+        ] } } } },
+    { id: 's-candle', cond: { kind: 'spot', panel: 'wedding', spot: 'candle' }, after: ['d-door'],
+      fx: { music: '/sfx/fire.wav', swapView: { panel: 'wedding', tint: 'brightness(1.22) sepia(0.3) saturate(1.2)' },
+        sfx: '/story/sfx-chime.mp3' } },
+    { id: 's-xi', cond: { kind: 'spot', panel: 'wedding', spot: 'xi' }, after: ['s-candle'],
+      fx: { glow: 'wedding', done: true, sfx: '/story/sfx-chime.mp3' } },
   ],
 }
 
@@ -103,28 +218,34 @@ export const CH5: ChapterDef = {
   id: 'ch5', no: '玖', name: '天台', poem: '收音机响的时候，她还靠在他肩上。', where: '一九八三 · 楼顶天台',
   ambient: '/story/amb-hum.mp3',
   hero: { panel: 'roof', x: 40, y: 78 },
-  goal: 'post',
+  goal: 'bikes',
   panels: [
     {
       id: 'roof', img: '/story/a5.webp', cell: 0,
       edges: { r: 'lu' },
       spots: [
-        { id: 'radio', x: 56, y: 58, w: 16, h: 16 },
-        { id: 'wire', x: 76, y: 12, w: 22, h: 16 },
+        { id: 'radio', x: 54, y: 56, w: 18, h: 18 },
+        { id: 'wire', x: 74, y: 10, w: 24, h: 18 },
       ],
     },
   ],
   steps: [
     { id: 's-radio', cond: { kind: 'spot', panel: 'roof', spot: 'radio' },
-      fx: { music: '/story/boombox.mp3', keepZoom: true, swap: { panel: 'roof', img: '/story/a5-roof.webp' } } },
-    { id: 's-wire', cond: { kind: 'spot', panel: 'roof', spot: 'wire' }, after: ['s-radio'],
-      fx: { sfx: '/story/sfx-peel.mp3', spawn: { def: { id: 'post', img: '/story/a5-post1978.webp', cell: 3, edges: { l: 'lu' } }, cells: [3, 2, 1] } } },
-    { id: 'c-post', cond: { kind: 'connect', a: 'roof', aside: 'r', b: 'post' }, after: ['s-wire'],
+      fx: { music: '/story/boombox.mp3', swap: { panel: 'roof', img: '/story/a5-roof.webp' },
+        sfx: '/story/sfx-chime.mp3' } },
+    { id: 'd-wire', cond: { kind: 'dive', panel: 'roof', spot: 'wire' }, after: ['s-radio'],
+      fx: { sfx: '/story/sfx-peel.mp3', pushView: { panel: 'roof', view: {
+        img: '/story/a5-post1978.webp',
+        spots: [{ id: 'horn', x: 38, y: 34, w: 26, h: 28 }] } } } },
+    { id: 's-horn', cond: { kind: 'spot', panel: 'roof', spot: 'horn' }, after: ['d-wire'],
+      fx: { sfx: '/story/sfx-peel.mp3', spawn: {
+        def: { id: 'bikes', img: '/story/a5-bikes.webp', cell: 3, edges: { l: 'lu' },
+          spots: [{ id: 'bell', x: 48, y: 56, w: 22, h: 22 }] },
+        cells: [3, 2, 1] } } },
+    { id: 'c-bikes', cond: { kind: 'connect', a: 'roof', aside: 'r', b: 'bikes' }, after: ['s-horn'],
       fx: { walk: true, sfx: '/story/horn.mp3' } },
-    { id: 's-mem', cond: { kind: 'auto' }, after: ['c-post'],
-      fx: { sfx: '/story/sfx-chime.mp3', spawn: { def: { id: 'bikes', img: '/story/a5-bikes.webp', cell: 2 }, cells: [2, 1, 3] } } },
-    { id: 'end', cond: { kind: 'auto' }, after: ['s-mem'],
-      fx: { glow: 'bikes', collect: true, done: true } },
+    { id: 's-bell', cond: { kind: 'spot', panel: 'bikes', spot: 'bell' }, after: ['c-bikes'],
+      fx: { glow: 'bikes', collect: true, done: true, sfx: '/story/sfx-chime.mp3' } },
   ],
 }
 
@@ -146,125 +267,65 @@ export const CH6: ChapterDef = {
     { id: 'village', img: '/story/a6.webp', cell: 1, dim: true },
   ],
   steps: [
-    { id: 's-jar', cond: { kind: 'spot', panel: 'store', spot: 'jar' }, fx: { sfx: '/story/sfx-chime.mp3', keepZoom: true } },
-    { id: 's-hand', cond: { kind: 'spot', panel: 'store', spot: 'hand' }, after: ['s-jar'], fx: { sfx: '/story/sfx-chime.mp3', keepZoom: true } },
+    { id: 'd-jar', cond: { kind: 'dive', panel: 'store', spot: 'jar' },
+      fx: { sfx: '/story/sfx-peel.mp3', pushView: { panel: 'store', view: {
+        img: '/story/a6-store.webp',
+        crop: { x: 30, y: 36, w: 26, h: 30 },
+        spots: [{ id: 'candy', x: 36, y: 46, w: 18, h: 18 }] } } } },
+    { id: 's-candy', cond: { kind: 'spot', panel: 'store', spot: 'candy' }, after: ['d-jar'],
+      fx: { sfx: '/story/sfx-chime.mp3', popView: { panel: 'store' } } },
+    { id: 's-hand', cond: { kind: 'spot', panel: 'store', spot: 'hand' }, after: ['s-candy'],
+      fx: { sfx: '/story/sfx-chime.mp3' } },
     { id: 's-give', cond: { kind: 'spot', panel: 'store', spot: 'kid' }, after: ['s-hand'],
-      fx: { sfx: '/story/sfx-chime.mp3', swap: { panel: 'village', img: '/story/a6.webp', undim: true }, setEdges: { panel: 'village', edges: { l: 'tang' } } } },
+      fx: { sfx: '/story/sfx-chime.mp3',
+        swap: { panel: 'village', img: '/story/a6.webp', undim: true },
+        setEdges: { panel: 'village', edges: { l: 'tang' } } } },
     { id: 'c-village', cond: { kind: 'connect', a: 'store', aside: 'r', b: 'village' }, after: ['s-give'],
       fx: { walk: true, sfx: '/story/sfx-chime.mp3' } },
     { id: 'end', cond: { kind: 'auto' }, after: ['c-village'],
-      fx: { glow: 'village', collect: true, done: true, walkPath: ['store', 'village'] } },
+      fx: { glow: 'village', collect: true, done: true } },
   ],
 }
 
 // ------------------------------------------------------------
-// 扩幕：学徒 / 雨夜 / 站台 / 婚礼
+// 拾壹 · 灯火：多年后，他揣着糖纸在城里找那一扇窗
 // ------------------------------------------------------------
-
-export const CHX1: ChapterDef = {
-  id: 'chx1', no: '贰', name: '学徒', poem: '师傅的手搭在他手上，铁就听话了。', where: '一九五八 · 机修车间',
-  ambient: '/sfx/factory.wav',
-  hero: { panel: 'lathe', x: 28, y: 74 },
-  goal: 'shop',
+export const CH7: ChapterDef = {
+  id: 'ch7', no: '拾壹', name: '灯火', poem: '他数了一千扇窗，终于有一扇为她亮着。', where: '二〇〇八 · 旧城夜色',
+  ambient: '/story/amb-city.mp3',
+  hero: { panel: 'city', x: 50, y: 84 },
   panels: [
     {
-      id: 'lathe', img: '/story/b2-lathe.webp', cell: 0,
-      edges: { b: 'chang' },
-      spots: [{ id: 'paper', x: 56, y: 58, w: 24, h: 22 }],
+      id: 'city', img: '/story/a2-windows.webp', cell: 0,
+      tint: 'brightness(0.72) saturate(0.75) hue-rotate(185deg)',
+      spots: [
+        { id: 'w1', x: 14, y: 16, w: 22, h: 24 },
+        { id: 'w2', x: 62, y: 18, w: 22, h: 24 },
+        { id: 'w3', x: 40, y: 54, w: 22, h: 26 },
+      ],
     },
   ],
   steps: [
-    { id: 's-paper', cond: { kind: 'spot', panel: 'lathe', spot: 'paper' },
-      fx: { sfx: '/story/sfx-peel.mp3', spawn: {
-        def: { id: 'desk', img: '/story/b2-desk.webp', cell: 1, spots: [{ id: 'gear', x: 36, y: 32, w: 28, h: 28 }] },
-        cells: [1, 3, 2] } } },
-    { id: 's-overlay', cond: { kind: 'overlay', a: 'desk', b: 'lathe' }, after: ['s-paper'],
-      fx: { glow: 'lathe', sfx: '/story/sfx-chime.mp3' } },
-    { id: 's-part', cond: { kind: 'spot', panel: 'lathe', spot: 'paper' }, after: ['s-overlay'],
-      fx: { sfx: '/story/sfx-peel.mp3', spawn: {
-        def: { id: 'shop', img: '/act4/workshop.webp', cell: 2, edges: { t: 'chang' } },
-        cells: [2, 3, 1] } } },
-    { id: 'c-shop', cond: { kind: 'connect', a: 'lathe', aside: 'b', b: 'shop' }, after: ['s-part'],
-      fx: { walk: true, sfx: '/story/sfx-chime.mp3' } },
-    { id: 'end', cond: { kind: 'auto' }, after: ['c-shop'],
-      fx: { glow: 'shop', done: true, sfx: '/story/sfx-chime.mp3' } },
-  ],
-}
-
-export const CHX2: ChapterDef = {
-  id: 'chx2', no: '肆', name: '雨夜', poem: '一把伞，两个人，雨就小了。', where: '一九六一 · 书店檐下',
-  ambient: '/sfx/rain.wav',
-  hero: { panel: 'rain', x: 50, y: 78 },
-  goal: 'book',
-  panels: [
-    {
-      id: 'rain', img: '/story/b4-rain.webp', cell: 0,
-      edges: { r: 'shu' },
-      spots: [{ id: 'eave', x: 6, y: 18, w: 24, h: 42 }],
-    },
-  ],
-  steps: [
-    { id: 's-eave', cond: { kind: 'spot', panel: 'rain', spot: 'eave' },
-      fx: { sfx: '/story/sfx-peel.mp3', spawn: {
-        def: { id: 'book', img: '/story/b4-book.webp', cell: 3, edges: { l: 'shu', b: 'deng' }, spots: [{ id: 'lamp', x: 56, y: 8, w: 24, h: 22 }] },
-        cells: [3, 2, 1] } } },
-    { id: 'c-book', cond: { kind: 'connect', a: 'rain', aside: 'r', b: 'book' }, after: ['s-eave'],
-      fx: { walk: true, sfx: '/story/sfx-chime.mp3' } },
-    { id: 's-lamp', cond: { kind: 'spot', panel: 'book', spot: 'lamp' }, after: ['c-book'],
-      fx: { sfx: '/story/sfx-peel.mp3', spawn: {
-        def: { id: 'nightwin', img: '/story/a2-windows.webp', cell: 2, edges: { t: 'deng' } },
-        cells: [2, 1, 3] } } },
-    { id: 'c-win', cond: { kind: 'connect', a: 'book', aside: 'b', b: 'nightwin' }, after: ['s-lamp'],
-      fx: { sfx: '/story/sfx-chime.mp3' } },
-    { id: 'end', cond: { kind: 'auto' }, after: ['c-win'],
-      fx: { glow: 'nightwin', done: true, sfx: '/story/sfx-chime.mp3' } },
-  ],
-}
-
-export const CHX3: ChapterDef = {
-  id: 'chx3', no: '陆', name: '站台', poem: '红围巾挥了三下，车就开了。', where: '一九七八 · 火车站台',
-  ambient: '/sfx/train.wav',
-  hero: { panel: 'platform', x: 36, y: 74 },
-  goal: 'train',
-  panels: [
-    {
-      id: 'platform', img: '/story/b6-platform.webp', cell: 0,
-      edges: { r: 'che' },
-      spots: [{ id: 'whistle', x: 28, y: 56, w: 22, h: 28 }],
-    },
-  ],
-  steps: [
-    { id: 's-whistle', cond: { kind: 'spot', panel: 'platform', spot: 'whistle' },
-      fx: { sfx: '/story/sfx-peel.mp3', spawn: {
-        def: { id: 'train', img: '/story/fin-station.webp', cell: 3, edges: { l: 'che' }, spots: [{ id: 'window', x: 42, y: 26, w: 20, h: 28 }] },
-        cells: [3, 2, 1] } } },
-    { id: 'c-train', cond: { kind: 'connect', a: 'platform', aside: 'r', b: 'train' }, after: ['s-whistle'],
-      fx: { walk: true, sfx: '/story/horn.mp3' } },
-    { id: 's-window', cond: { kind: 'spot', panel: 'train', spot: 'window' }, after: ['c-train'],
-      fx: { glow: 'train', done: true, sfx: '/story/sfx-chime.mp3' } },
-  ],
-}
-
-export const CHX4: ChapterDef = {
-  id: 'chx4', no: '捌', name: '婚礼', poem: '两根红烛，就算成了家。', where: '一九八〇 · 新房',
-  ambient: '/sfx/murmur.wav',
-  hero: { panel: 'wedding', x: 50, y: 80 },
-  goal: 'newroom',
-  panels: [
-    {
-      id: 'wedding', img: '/story/b8-wedding.webp', cell: 0,
-      edges: { b: 'fang' },
-      spots: [{ id: 'door', x: 26, y: 6, w: 30, h: 32 }],
-    },
-  ],
-  steps: [
-    { id: 's-door', cond: { kind: 'spot', panel: 'wedding', spot: 'door' },
-      fx: { sfx: '/story/sfx-peel.mp3', spawn: {
-        def: { id: 'newroom', img: '/story/b8-room.webp', cell: 3, edges: { t: 'fang' }, spots: [{ id: 'candle', x: 60, y: 26, w: 20, h: 26 }] },
-        cells: [3, 2, 1] } } },
-    { id: 'c-fang', cond: { kind: 'connect', a: 'wedding', aside: 'b', b: 'newroom' }, after: ['s-door'],
-      fx: { walk: true, sfx: '/story/sfx-chime.mp3' } },
-    { id: 's-candle', cond: { kind: 'spot', panel: 'newroom', spot: 'candle' }, after: ['c-fang'],
-      fx: { glow: 'newroom', done: true, music: '/sfx/fire.wav' } },
+    { id: 'd-w1', cond: { kind: 'dive', panel: 'city', spot: 'w1' },
+      fx: { sfx: '/story/sfx-peel.mp3', pushView: { panel: 'city', view: {
+        img: '/story/b8-room.webp', tint: 'brightness(0.55) saturate(0.5)',
+        spots: [{ id: 'empty', x: 42, y: 38, w: 24, h: 26 }] } } } },
+    { id: 's-empty', cond: { kind: 'spot', panel: 'city', spot: 'empty' }, after: ['d-w1'],
+      fx: { sfx: '/story/sfx-tear.mp3', popView: { panel: 'city' } } },
+    { id: 'd-w2', cond: { kind: 'dive', panel: 'city', spot: 'w2' }, after: ['s-empty'],
+      fx: { sfx: '/story/sfx-peel.mp3', pushView: { panel: 'city', view: {
+        img: '/story/a6-store.webp', tint: 'brightness(0.5) saturate(0.45)',
+        spots: [{ id: 'dark', x: 38, y: 42, w: 26, h: 24 }] } } } },
+    { id: 's-dark', cond: { kind: 'spot', panel: 'city', spot: 'dark' }, after: ['d-w2'],
+      fx: { sfx: '/story/sfx-tear.mp3', popView: { panel: 'city' } } },
+    { id: 's-glow', cond: { kind: 'auto' }, after: ['s-dark'],
+      fx: { swapView: { panel: 'city', tint: 'brightness(1.02) saturate(0.95)' },
+        sfx: '/story/sfx-chime.mp3' } },
+    { id: 'd-w3', cond: { kind: 'dive', panel: 'city', spot: 'w3' }, after: ['s-glow'],
+      fx: { sfx: '/story/sfx-peel.mp3', pushView: { panel: 'city', view: {
+        img: '/story/fin-station.webp', tint: 'brightness(1.08)',
+        spots: [{ id: 'figure', x: 52, y: 38, w: 20, h: 28 }] } } } },
+    { id: 's-figure', cond: { kind: 'spot', panel: 'city', spot: 'figure' }, after: ['d-w3'],
+      fx: { glow: 'city', done: true, music: '/story/sfx-chime.mp3', sfx: '/story/sfx-chime.mp3' } },
   ],
 }

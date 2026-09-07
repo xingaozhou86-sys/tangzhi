@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Board } from '../world/engine'
-import { CH1, CH2, CH3, CH5, CH6, CHX1, CHX2, CHX3, CHX4 } from './chapters'
+import { CH1, CH2, CH3, CH5, CH6, CH7, CHX1, CHX2, CHX3, CHX4 } from './chapters'
 import { ActFour } from './ActFour'
 import { Epilogue } from './Epilogue'
 import './game.css'
@@ -24,6 +24,7 @@ const STAGES: Stage[] = [
   { kind: 'chapter', def: CHX4 },
   { kind: 'chapter', def: CH5 },
   { kind: 'chapter', def: CH6 },
+  { kind: 'chapter', def: CH7 },
   { kind: 'epilogue' },
 ]
 

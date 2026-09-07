@@ -1,10 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
-import type { Cell, ChapterDef, PanelDef, PanelState, Side, Step } from './types'
+import type { Cell, ChapterDef, PanelDef, PanelState, Side, Step, View } from './types'
 import './engine.css'
 
+// ------------------------------------------------------------
+// 《糖纸》v3 · 深画引擎
+// 一整面墙就是屏幕。画可以钻进去，画里有门，门后是另一个空间。
+// 他永远站在画里，你铺路，他走。
+// ------------------------------------------------------------
+
 const OPP: Record<Side, Side> = { l: 'r', r: 'l', t: 'b', b: 't' }
-const PAD = 2.4
-const GAP = 2.2
+const PAD = 1.1
+const GAP = 1.4
 const CW = (100 - PAD * 2 - GAP) / 2
 
 function cellRect(c: Cell) {
@@ -24,10 +30,8 @@ function edgeMid(c: Cell, s: Side) {
 function neighbor(c: Cell, s: Side): Cell | null {
   const col = c % 2
   const row = Math.floor(c / 2)
-  const dc = s === 'l' ? -1 : s === 'r' ? 1 : 0
-  const dr = s === 't' ? -1 : s === 'b' ? 1 : 0
-  const nc = col + dc
-  const nr = row + dr
+  const nc = col + (s === 'l' ? -1 : s === 'r' ? 1 : 0)
+  const nr = row + (s === 't' ? -1 : s === 'b' ? 1 : 0)
   if (nc < 0 || nc > 1 || nr < 0 || nr > 1) return null
   return (nr * 2 + nc) as Cell
 }
@@ -40,60 +44,100 @@ function cellAt(x: number, y: number): Cell | null {
   return null
 }
 
-function play(src: string, vol = 0.38) {
+function play(src: string, vol = 0.4) {
   const a = new Audio(src)
   a.volume = vol
   a.play().catch(() => {})
 }
 
 function toState(d: PanelDef): PanelState {
-  return { id: d.id, cell: d.cell, dim: !!d.dim, lit: false, layers: d.layers ?? [{ img: d.img, edges: d.edges }] }
+  return {
+    id: d.id, cell: d.cell, dim: !!d.dim, lit: false, dive: [],
+    layers: d.layers ?? [{ img: d.img, edges: d.edges, tint: d.tint, year: d.year, spots: d.spots }],
+  }
 }
 
-interface Beam { id: number; x1: number; y1: number; x2: number; y2: number }
+/** 当前视野 = 入画栈顶，否则最上层画 */
+function curView(p: PanelState): View {
+  return p.dive.length ? p.dive[p.dive.length - 1] : p.layers[0]
+}
+
+/** 视野坐标(0-100) → 面板显示坐标(0-100)。无 crop 时恒等 */
+function viewToPanel(v: View, fx: number, fy: number) {
+  if (!v.crop) return { x: fx, y: fy, inside: true }
+  const x = ((fx - v.crop.x) / v.crop.w) * 100
+  const y = ((fy - v.crop.y) / v.crop.h) * 100
+  return { x, y, inside: x >= -6 && x <= 106 && y >= -6 && y <= 106 }
+}
+
+/** 视野的 CSS 背景（含连续变焦） */
+function viewBg(v: View): React.CSSProperties {
+  const base: React.CSSProperties = { backgroundImage: `url(${v.img})` }
+  if (!v.crop) return { ...base, backgroundSize: 'cover', backgroundPosition: 'center' }
+  const sx = 100 / v.crop.w
+  const sy = 100 / v.crop.h
+  const px = Math.max(0, Math.min(100, ((sx * (v.crop.x + v.crop.w / 2) - 50) / (sx - 1)) * 1))
+  const py = Math.max(0, Math.min(100, ((sy * (v.crop.y + v.crop.h / 2) - 50) / (sy - 1)) * 1))
+  return { ...base, backgroundSize: `${sx * 100}% ${sy * 100}%`, backgroundPosition: `${px}% ${py}%` }
+}
+
+interface Beam { id: number; x1: number; y1: number; x2: number; y2: number; res?: boolean }
 
 export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () => void; onCollect: () => void }) {
   const [panels, setPanels] = useState<PanelState[]>(() => def.panels.map(toState))
   const [done, setDone] = useState<string[]>([])
-  const [hint, setHint] = useState(false)
-  const [zoom, setZoom] = useState<string | null>(null)
+  const [hint, setHint] = useState(0) // 0 无 / 1 轻提示 / 2 深提示（给出拖拽光路）
   const [beams, setBeams] = useState<Beam[]>([])
-  const [walker, setWalker] = useState<{ x: number; y: number; fast?: boolean } | null>(null)
   const [hero, setHero] = useState(def.hero ?? null)
-  const heroRef = useRef(hero)
-  heroRef.current = hero
   const [through, setThrough] = useState<string | null>(def.panels[0]?.img ?? null)
-
-  // 开场穿画入场
-  useEffect(() => {
-    const t = window.setTimeout(() => setThrough(null), 1150)
-    return () => window.clearTimeout(t)
-  }, [def.id])
   const [drag, setDrag] = useState<{ id: string; x: number; y: number } | null>(null)
   const [hoverCell, setHoverCell] = useState<Cell | null>(null)
   const [joined, setJoined] = useState<string[]>([])
+  const [morph, setMorph] = useState<Record<string, View>>({}) // panelId → 正在淡出的旧视野
+
   const boardRef = useRef<HTMLDivElement>(null)
   const panelsRef = useRef<PanelState[]>(panels)
   const doneRef = useRef<Set<string>>(new Set())
-  const idleRef = useRef<number>(0)
+  const heroRef = useRef(hero)
+  const idle1 = useRef<number>(0)
+  const idle2 = useRef<number>(0)
   const beamSeq = useRef(0)
   panelsRef.current = panels
-
-  // 所有出现过的画的定义（含 spawn 出来的），供查找入画点/边
-  const allDefs: PanelDef[] = [
-    ...def.panels,
-    ...def.steps.flatMap(s => (s.fx.spawn ? [s.fx.spawn.def] : [])),
-  ]
-  const defOf = (id: string) => allDefs.find(d => d.id === id)
+  heroRef.current = hero
 
   const poke = () => {
-    window.clearTimeout(idleRef.current)
-    setHint(false)
-    idleRef.current = window.setTimeout(() => setHint(true), 7000)
+    window.clearTimeout(idle1.current)
+    window.clearTimeout(idle2.current)
+    setHint(0)
+    idle1.current = window.setTimeout(() => setHint(h => Math.max(h, 1)), 7000)
+    idle2.current = window.setTimeout(() => setHint(2), 16000)
   }
 
   const availNow = () =>
     def.steps.filter(s => !doneRef.current.has(s.id) && (s.after ?? []).every(a => doneRef.current.has(a)))
+
+  // 开场：穿画入场 + 轻提示很快出现
+  useEffect(() => {
+    const t = window.setTimeout(() => setThrough(null), 1150)
+    idle1.current = window.setTimeout(() => setHint(1), 1800)
+    idle2.current = window.setTimeout(() => setHint(2), 14000)
+    return () => { window.clearTimeout(t); window.clearTimeout(idle1.current); window.clearTimeout(idle2.current) }
+  }, [def.id])
+
+  // 环境声
+  useEffect(() => {
+    if (!def.ambient) return
+    const a = new Audio(def.ambient)
+    a.loop = true
+    a.volume = 0
+    a.play().catch(() => {})
+    let v = 0
+    const t = window.setInterval(() => {
+      v = Math.min(0.12, v + 0.015)
+      a.volume = v
+    }, 120)
+    return () => { window.clearInterval(t); a.pause() }
+  }, [def.ambient])
 
   const fire = (step: Step) => {
     if (doneRef.current.has(step.id)) return
@@ -101,16 +145,14 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
     setDone(Array.from(doneRef.current))
     poke()
     const fx = step.fx
-    if (fx.sfx) play(fx.sfx, 0.55)
+    if (fx.sfx) play(fx.sfx, 0.5)
     if (fx.music) play(fx.music, 0.5)
     let delay = 0
+
     const cond = step.cond
     if (cond.kind === 'overlay') {
       const b = panelsRef.current.find(q => q.id === cond.b)
-      if (b) {
-        setJoined([b.id])
-        window.setTimeout(() => setJoined([]), 1700)
-      }
+      if (b) { setJoined([b.id]); window.setTimeout(() => setJoined([]), 1700) }
     }
     if (cond.kind === 'connect') {
       const a = panelsRef.current.find(q => q.id === cond.a)
@@ -120,45 +162,35 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
         const p2 = edgeMid(b.cell, OPP[cond.aside])
         const id = ++beamSeq.current
         setBeams(bs => [...bs, { id, x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y }])
-        window.setTimeout(() => setBeams(bs => bs.filter(x => x.id !== id)), 1700)
+        window.setTimeout(() => setBeams(bs => bs.filter(x => x.id !== id)), 1800)
         setJoined([a.id, b.id])
         window.setTimeout(() => setJoined([]), 1700)
         if (fx.walk) {
-          delay = 1200
+          delay = 1100
           const h = heroRef.current
           if (h && h.panel === a.id) {
-            // 他从这幅画走进那幅画
-            const nx = cond.aside === 'r' ? 14 : cond.aside === 'l' ? 86 : 50
-            const ny = cond.aside === 'b' ? 14 : cond.aside === 't' ? 86 : 62
-            window.setTimeout(() => setHero({ panel: b.id, x: nx, y: ny }), 250)
+            const nx = cond.aside === 'r' ? 12 : cond.aside === 'l' ? 88 : 50
+            const ny = cond.aside === 'b' ? 14 : cond.aside === 't' ? 86 : 64
+            window.setTimeout(() => setHero({ panel: b.id, x: nx, y: ny }), 260)
           } else if (h && h.panel === b.id) {
-            const nx = cond.aside === 'r' ? 86 : cond.aside === 'l' ? 14 : 50
-            const ny = cond.aside === 'b' ? 86 : cond.aside === 't' ? 14 : 62
-            window.setTimeout(() => setHero({ panel: a.id, x: nx, y: ny }), 250)
-          } else {
-            setWalker({ x: p1.x, y: p1.y })
-            requestAnimationFrame(() => requestAnimationFrame(() => setWalker({ x: p2.x, y: p2.y })))
-            window.setTimeout(() => setWalker(null), 2100)
+            const nx = cond.aside === 'r' ? 88 : cond.aside === 'l' ? 12 : 50
+            const ny = cond.aside === 'b' ? 86 : cond.aside === 't' ? 14 : 64
+            window.setTimeout(() => setHero({ panel: a.id, x: nx, y: ny }), 260)
           }
         }
       }
     }
-    if (fx.walkPath) {
-      const pts = fx.walkPath
-        .map(id => panelsRef.current.find(q => q.id === id))
-        .filter((q): q is PanelState => !!q)
-        .map(q => { const r = cellRect(q.cell); return { x: r.x + r.w / 2, y: r.y + r.h / 2 } })
-      if (pts.length > 1) {
-        setWalker({ ...pts[0], fast: true })
-        pts.forEach((pt, i) => {
-          if (i === 0) return
-          window.setTimeout(() => setWalker({ ...pt, fast: true }), 120 + i * 950)
-        })
-        window.setTimeout(() => setWalker(null), 120 + pts.length * 950 + 500)
-      }
-    }
+
     window.setTimeout(() => {
       const applyFx = () => {
+        // 视野切换的淡出层
+        const morphIn = (pid: string, fn: (p: PanelState) => PanelState) => {
+          const p = panelsRef.current.find(q => q.id === pid)
+          if (!p) return
+          setMorph(m => ({ ...m, [pid]: curView(p) }))
+          window.setTimeout(() => setMorph(m => { const n = { ...m }; delete n[pid]; return n }), 850)
+          setPanels(prev => prev.map(q => q.id === pid ? fn(q) : q))
+        }
         setPanels(prev => {
           let next = prev
           if (fx.spawn) {
@@ -169,48 +201,46 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
             if (cell != null) next = [...next, { ...toState(d), cell, born: true }]
           }
           if (fx.swap) next = next.map(q => q.id === fx.swap!.panel
-            ? { ...q, dim: fx.swap!.undim ? false : q.dim, layers: [{ ...q.layers[0], img: fx.swap!.img }] } : q)
+            ? { ...q, dim: fx.swap!.undim ? false : q.dim, layers: [{ ...q.layers[0], img: fx.swap!.img }], dive: [] } : q)
           if (fx.setEdges) next = next.map(q => q.id === fx.setEdges!.panel
             ? { ...q, layers: [{ ...q.layers[0], edges: fx.setEdges!.edges }] } : q)
           if (fx.glow) next = next.map(q => q.id === fx.glow ? { ...q, lit: true } : q)
+          if (fx.undim) next = next.map(q => q.id === fx.undim ? { ...q, dim: false } : q)
+          if (fx.popView) next = next.map(q => q.id === fx.popView!.panel ? { ...q, dive: q.dive.slice(0, -1) } : q)
           return next
         })
+        if (fx.popView && heroRef.current?.panel === fx.popView.panel) {
+          setHero({ panel: fx.popView.panel, x: 50, y: 72 })
+        }
+        if (fx.pushView) {
+          morphIn(fx.pushView.panel, q => {
+            // 入画时的中间变焦层要替换掉，不能在栈里残留
+            const top = q.dive[q.dive.length - 1]
+            const intermediate = top && top.crop && !top.spots
+            return { ...q, dive: [...(intermediate ? q.dive.slice(0, -1) : q.dive), fx.pushView!.view] }
+          })
+          if (heroRef.current?.panel === fx.pushView.panel) {
+            setHero({ panel: fx.pushView.panel, x: 50, y: 74 })
+          }
+        }
+        if (fx.swapView) morphIn(fx.swapView.panel, q => {
+          if (!q.dive.length) return { ...q, layers: [{ ...q.layers[0], img: fx.swapView!.img ?? q.layers[0].img, tint: fx.swapView!.tint ?? q.layers[0].tint, spots: fx.swapView!.spots ?? q.layers[0].spots }] }
+          const top = q.dive[q.dive.length - 1]
+          return { ...q, dive: [...q.dive.slice(0, -1), { ...top, img: fx.swapView!.img ?? top.img, tint: fx.swapView!.tint ?? top.tint, spots: fx.swapView!.spots ?? top.spots }] }
+        })
         if (fx.collect) onCollect()
-        if (fx.done) window.setTimeout(onDone, 1600)
+        if (fx.done) window.setTimeout(onDone, 1700)
       }
-      // 穿画：新画先扑面而来，再落回墙上
       if (fx.spawn) {
         setThrough(fx.spawn.def.img)
-        window.setTimeout(() => { setThrough(null); applyFx() }, 1200)
+        window.setTimeout(() => { setThrough(null); applyFx() }, 1150)
       } else {
         applyFx()
       }
     }, delay)
   }
 
-  // 环境声：淡入到很低的音量，只当气氛不当主角
-  useEffect(() => {
-    if (!def.ambient) return
-    const a = new Audio(def.ambient)
-    a.loop = true
-    a.volume = 0
-    a.play().catch(() => {})
-    let v = 0
-    const t = window.setInterval(() => {
-      v = Math.min(0.13, v + 0.016)
-      a.volume = v
-    }, 120)
-    return () => { window.clearInterval(t); a.pause() }
-  }, [def.ambient])
-
-  // 开场第一次提示来得快一些
-  useEffect(() => {
-    setHint(false)
-    idleRef.current = window.setTimeout(() => setHint(true), 1500)
-    return () => window.clearTimeout(idleRef.current)
-  }, [def.id])
-
-  // 连画扫描 + auto 步骤
+  // 连画扫描 + auto
   useEffect(() => {
     const t = window.setTimeout(() => {
       for (const s of availNow()) {
@@ -230,32 +260,84 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [panels, done])
 
+  // ---------- 拖拽：挪 / 揭 / 叠 / 换 ----------
+
   const dropPanel = (p: PanelState, pt: { x: number; y: number }) => {
     const target = cellAt(pt.x, pt.y)
     if (target == null || target === p.cell) return
     const cur = panelsRef.current.find(q => q.id === p.id) ?? p
     const occupant = panelsRef.current.find(q => q.id !== cur.id && q.cell === target)
+
     if (occupant) {
-      // 叠画：把拖着的画叠到目标画上，合成新画面
+      // 叠画
       const ov = availNow().find(s => s.cond.kind === 'overlay' && s.cond.a === cur.id && s.cond.b === occupant.id)
-      if (!ov) return
-      setPanels(prev => prev.filter(q => q.id !== cur.id))
-      fire(ov)
-      return
+      if (ov) {
+        setPanels(prev => prev.filter(q => q.id !== cur.id))
+        fire(ov)
+        return
+      }
     }
+
+    // 揭画：撕掉的那一年直接飞走，不占格子（永不满盘死锁）
     const peelStep = availNow().find(s => s.cond.kind === 'peel' && s.cond.panel === cur.id)
-    if (peelStep && cur.layers.length > 1) {
-      const top = cur.layers[0]
-      const nid = `${cur.id}~${cur.layers.length}`
-      setPanels(prev => prev
-        .map(q => q.id === cur.id ? { ...q, layers: q.layers.slice(1) } : q)
-        .concat({ id: nid, cell: target, layers: [top], dim: false, lit: false, born: true }))
+    if (peelStep && cur.layers.length > 1 && cur.dive.length === 0) {
+      setPanels(prev => prev.map(q => q.id === cur.id ? { ...q, layers: q.layers.slice(1), dive: [] } : q))
+      setJoined([cur.id])
+      window.setTimeout(() => setJoined([]), 900)
       fire(peelStep)
       return
     }
+
+    if (occupant) {
+      // 换位置：满盘也永远挪得动
+      setPanels(prev => prev.map(q =>
+        q.id === cur.id ? { ...q, cell: target } : q.id === occupant.id ? { ...q, cell: cur.cell } : q))
+      play('/sfx/wooddrop.wav', 0.32)
+      poke()
+      return
+    }
+
+    // 空框：挪过去
     setPanels(prev => prev.map(q => q.id === cur.id ? { ...q, cell: target } : q))
-    play('/sfx/wooddrop.wav', 0.35)
+    play('/sfx/wooddrop.wav', 0.32)
     poke()
+  }
+
+  // ---------- 点画：入画 / 触发 ----------
+
+  const clickSpot = (panelId: string, spotId: string) => {
+    const s = availNow().find(st =>
+      (st.cond.kind === 'spot' || st.cond.kind === 'dive') &&
+      st.cond.panel === panelId && st.cond.spot === spotId)
+    if (!s) return
+    const p = panelsRef.current.find(q => q.id === panelId)
+    if (!p) return
+    const v = curView(p)
+    const sp = v.spots?.find(x => x.id === spotId)
+    if (sp) setHero({ panel: panelId, x: sp.x + sp.w / 2, y: Math.min(92, sp.y + sp.h / 2 + 10) })
+
+    const isDive = s.cond.kind === 'dive'
+    window.setTimeout(() => {
+      if (isDive && s.fx.pushView && sp) {
+        // 镜头先钻进这一块，再落到另一个空间
+        const cropView: View = { img: v.img, crop: { x: sp.x, y: sp.y, w: sp.w, h: sp.h }, tint: v.tint }
+        setPanels(prev => prev.map(q => q.id === panelId ? { ...q, dive: [...q.dive, cropView] } : q))
+        window.setTimeout(() => fire(s), 620)
+      } else {
+        fire(s)
+      }
+    }, isDive ? 480 : 620)
+  }
+
+  const goBack = (panelId: string) => {
+    const p = panelsRef.current.find(q => q.id === panelId)
+    if (!p || !p.dive.length) return
+    poke()
+    play('/story/sfx-peel.mp3', 0.25)
+    const backStep = availNow().find(s => s.cond.kind === 'back' && s.cond.panel === panelId)
+    setPanels(prev => prev.map(q => q.id === panelId ? { ...q, dive: q.dive.slice(0, -1) } : q))
+    if (heroRef.current?.panel === panelId) setHero({ panel: panelId, x: 50, y: 72 })
+    if (backStep) fire(backStep)
   }
 
   const onPanelDown = (e: React.PointerEvent, p: PanelState) => {
@@ -266,7 +348,7 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
     const start = { x: e.clientX, y: e.clientY }
     let moved = false
     const move = (ev: PointerEvent) => {
-      if (!moved && Math.hypot(ev.clientX - start.x, ev.clientY - start.y) > 8) moved = true
+      if (!moved && Math.hypot(ev.clientX - start.x, ev.clientY - start.y) > 9) moved = true
       if (moved) {
         const px = (ev.clientX - rect.left) / rect.width * 100
         const py = (ev.clientY - rect.top) / rect.height * 100
@@ -284,8 +366,18 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
       setDrag(null)
       setHoverCell(null)
       if (!moved) {
-        const d = defOf(p.id)
-        if (d?.spots?.length) { setZoom(p.id); poke() }
+        // 点：换算到视野坐标，看落在哪个圆里
+        const r = cellRect(p.cell)
+        const px = (ev.clientX - rect.left) / rect.width * 100
+        const py = (ev.clientY - rect.top) / rect.height * 100
+        const fx = ((px - r.x) / r.w) * 100
+        const fy = ((py - r.y) / r.h) * 100
+        const v = curView(p)
+        let vx = fx, vy = fy
+        if (v.crop) { vx = v.crop.x + (fx / 100) * v.crop.w; vy = v.crop.y + (fy / 100) * v.crop.h }
+        const sp = (v.spots ?? []).find(s => vx >= s.x && vx <= s.x + s.w && vy >= s.y && vy <= s.y + s.h)
+        if (sp) clickSpot(p.id, sp.id)
+        else poke()
         return
       }
       dropPanel(p, {
@@ -297,16 +389,7 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
     window.addEventListener('pointerup', up)
   }
 
-  const clickSpot = (panelId: string, spotId: string) => {
-    const s = availNow().find(st => st.cond.kind === 'spot' && st.cond.panel === panelId && st.cond.spot === spotId)
-    if (!s) return
-    // 他先走过去看，再发生
-    const d = defOf(panelId)
-    const sp = d?.spots?.find(x => x.id === spotId)
-    if (sp) setHero({ panel: panelId, x: sp.x + sp.w / 2, y: sp.y + sp.h / 2 + 8 })
-    window.setTimeout(() => fire(s), 620)
-    if (!s.fx.keepZoom) setZoom(null)
-  }
+  // ---------- 渲染数据 ----------
 
   const avail = def.steps.filter(s => !done.includes(s.id) && (s.after ?? []).every(a => done.includes(a)))
   const liveEdges: Array<{ id: string; side: Side }> = []
@@ -316,63 +399,62 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
     }
   }
   const spotStepsFor = (pid: string) =>
-    avail.filter(s => s.cond.kind === 'spot' && s.cond.panel === pid)
+    avail.filter(s => (s.cond.kind === 'spot' || s.cond.kind === 'dive') && s.cond.panel === pid)
   const peelable = (pid: string) =>
     avail.some(s => s.cond.kind === 'peel' && s.cond.panel === pid)
 
-  const zoomDef = zoom ? defOf(zoom) : undefined
-  const zoomPanel = zoom ? panels.find(p => p.id === zoom) : undefined
+  // 深提示：能连但还没连上的两幅画之间，拉起一条常亮的光路
+  const hintBeams: Beam[] = []
+  if (hint >= 2) {
+    for (const s of avail) {
+      if (s.cond.kind !== 'connect') continue
+      const c = s.cond
+      const a = panels.find(q => q.id === c.a)
+      const b = panels.find(q => q.id === c.b)
+      if (!a || !b) continue
+      if (neighbor(a.cell, c.aside) === b.cell) continue
+      const ka = a.layers[0].edges?.[c.aside]
+      const kb = b.layers[0].edges?.[OPP[c.aside]]
+      if (!ka || ka !== kb) continue
+      const m1 = edgeMid(a.cell, c.aside)
+      const m2 = edgeMid(b.cell, OPP[c.aside])
+      hintBeams.push({ id: -1 - hintBeams.length, x1: m1.x, y1: m1.y, x2: m2.x, y2: m2.y, res: true })
+    }
+  }
 
-  // 拖拽共振：拖着的画靠近能接的缝时，两缝之间拉起一根光须
+  // 拖拽共振
   const resonance = (() => {
     if (!drag || hoverCell == null) return null
     const p = panels.find(q => q.id === drag.id)
     if (!p) return null
-    if (panels.some(q => q.id !== p.id && q.cell === hoverCell)) return null
+    const occupant = panels.find(q => q.id !== p.id && q.cell === hoverCell)
+    if (occupant) {
+      const ov = avail.find(s => s.cond.kind === 'overlay' && s.cond.a === p.id && s.cond.b === occupant.id)
+      if (ov) {
+        const r = cellRect(occupant.cell)
+        return { x1: drag.x + CW / 2, y1: drag.y + CW / 2, x2: r.x + r.w / 2, y2: r.y + r.h / 2, other: occupant.id }
+      }
+      return null
+    }
     for (const s of avail) {
       if (s.cond.kind !== 'connect') continue
       const c = s.cond
-      if (c.a === p.id) {
-        const b = panels.find(q => q.id === c.b)
-        if (b && neighbor(hoverCell, c.aside) === b.cell) {
-          const ka = p.layers[0].edges?.[c.aside]
-          const kb = b.layers[0].edges?.[OPP[c.aside]]
-          if (ka && ka === kb) {
-            const m1 = edgeMid(hoverCell, c.aside)
-            const m2 = edgeMid(b.cell, OPP[c.aside])
-            return { x1: m1.x, y1: m1.y, x2: m2.x, y2: m2.y, other: b.id }
-          }
-        }
+      const tryPair = (selfId: string, otherId: string, selfCell: Cell, side: Side) => {
+        const other = panels.find(q => q.id === otherId)
+        if (!other || neighbor(selfCell, side) !== other.cell) return null
+        const k1 = (selfId === c.a ? p.layers[0].edges?.[side] : other.layers[0].edges?.[side])
+        const k2 = (selfId === c.a ? other.layers[0].edges?.[OPP[side]] : p.layers[0].edges?.[OPP[side]])
+        if (!k1 || k1 !== k2) return null
+        const m1 = edgeMid(selfCell, side)
+        const m2 = edgeMid(other.cell, OPP[side])
+        return { x1: m1.x, y1: m1.y, x2: m2.x, y2: m2.y, other: otherId }
       }
-      if (c.b === p.id) {
-        const a = panels.find(q => q.id === c.a)
-        if (a && neighbor(a.cell, c.aside) === hoverCell) {
-          const ka = a.layers[0].edges?.[c.aside]
-          const kb = p.layers[0].edges?.[OPP[c.aside]]
-          if (ka && ka === kb) {
-            const m1 = edgeMid(a.cell, c.aside)
-            const m2 = edgeMid(hoverCell, OPP[c.aside])
-            return { x1: m1.x, y1: m1.y, x2: m2.x, y2: m2.y, other: a.id }
-          }
-        }
-      }
-    }
-    // 叠画共振：拖到目标画上时，目标画亮起来
-    for (const s of avail) {
-      if (s.cond.kind !== 'overlay') continue
-      const c = s.cond
-      if (c.a !== p.id) continue
-      const b = panels.find(q => q.id === c.b)
-      if (b && hoverCell === b.cell) {
-        const r = cellRect(b.cell)
-        const m1 = { x: drag.x + CW / 2, y: drag.y + CW / 2 }
-        return { x1: m1.x, y1: m1.y, x2: r.x + r.w / 2, y2: r.y + r.h / 2, other: b.id }
-      }
+      if (c.a === p.id) { const r = tryPair(c.a, c.b, hoverCell, c.aside); if (r) return r }
+      if (c.b === p.id) { const r = tryPair(c.b, c.a, hoverCell, OPP[c.aside]); if (r) return r }
     }
     return null
   })()
 
-  // 已连上的画对：缝要"消失"，两幅画变一个连续空间
   const linkedPairs = def.steps
     .filter(s => done.includes(s.id) && s.cond.kind === 'connect')
     .map(s => s.cond as { kind: 'connect'; a: string; aside: Side; b: string })
@@ -399,100 +481,75 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
         })}
 
         {panels.map(p => {
-          const top = p.layers[0]
+          const v = curView(p)
           const r = cellRect(p.cell)
           const dragging = drag?.id === p.id
           const style = dragging
             ? { left: `${drag.x}%`, top: `${drag.y}%`, width: `${CW}%`, height: `${CW}%` }
             : { left: `${r.x}%`, top: `${r.y}%`, width: `${r.w}%`, height: `${r.h}%` }
-          const d = defOf(p.id)
-          const rings = hint ? spotStepsFor(p.id) : []
+          const rings = spotStepsFor(p.id)
+            .map(s => ({ s, spot: (v.spots ?? []).find(sp => sp.id === (s.cond as { spot: string }).spot) }))
+            .filter(x => !!x.spot)
+          // 有事情在别的层等着他：退回钮发亮
+          const backHot = p.dive.length > 0 && spotStepsFor(p.id).some(s =>
+            !(v.spots ?? []).some(sp => sp.id === (s.cond as { spot: string }).spot))
+          const old = morph[p.id]
           return (
             <div
               key={p.id}
-              className={`pnl ${p.lit ? 'lit' : ''} ${p.dim ? 'dim' : ''} ${p.born ? 'born' : ''} ${dragging ? 'drag' : ''} ${zoom === p.id ? 'gone' : ''} ${joined.includes(p.id) ? 'joined' : ''} ${resonance && (resonance.other === p.id || drag?.id === p.id) ? 'resonant' : ''}`}
+              className={`pnl ${p.lit ? 'lit' : ''} ${p.dim ? 'dim' : ''} ${p.born ? 'born' : ''} ${dragging ? 'drag' : ''} ${joined.includes(p.id) ? 'joined' : ''} ${resonance && (resonance.other === p.id || drag?.id === p.id) ? 'resonant' : ''} ${p.dive.length ? 'dived' : ''}`}
               style={style}
               onPointerDown={e => onPanelDown(e, p)}
             >
-              <div className="pnl-art" style={{ backgroundImage: `url(${top.img})`, filter: top.tint }} />
-              {top.year && <div className="pnl-year">{top.year}</div>}
-              {Object.keys(top.edges ?? {}).map(side => (
+              <div className="pnl-art" style={{ ...viewBg(v), filter: v.tint }} />
+              {old && <div className="pnl-art fadeout" style={{ ...viewBg(old), filter: old.tint }} />}
+              {v.year && <div className="pnl-year">{v.year}</div>}
+              {p.dive.length > 0 && (
+                <div
+                  className={`backchip ${backHot ? 'hot' : ''}`}
+                  onPointerDown={e => { e.stopPropagation(); goBack(p.id) }}
+                >‹</div>
+              )}
+              {Object.keys(p.layers[0].edges ?? {}).map(side => (
                 <i key={side} className={`leak side-${side} ${liveEdges.some(le => le.id === p.id && le.side === side) ? 'live' : ''}`} />
               ))}
-              {rings.map(s => {
-                const spot = d?.spots?.find(sp => sp.id === (s.cond as { spot: string }).spot)
-                if (!spot) return null
-                return <i key={s.id} className="ring" style={{ left: `${spot.x + spot.w / 2}%`, top: `${spot.y + spot.h / 2}%` }} />
+              {rings.map(({ s, spot }) => {
+                const m = viewToPanel(v, spot!.x + spot!.w / 2, spot!.y + spot!.h / 2)
+                if (!m.inside) return null
+                const isDive = s.cond.kind === 'dive'
+                return (
+                  <i
+                    key={s.id}
+                    className={`ring ${hint >= 1 ? 'hot' : ''} ${isDive ? 'dive' : ''}`}
+                    style={{ left: `${m.x}%`, top: `${m.y}%` }}
+                  />
+                )
               })}
-              {hint && peelable(p.id) && p.layers.length > 1 && <i className="dogear" />}
-              {hint && avail.some(s => s.cond.kind === 'overlay' && (s.cond.a === p.id || s.cond.b === p.id)) && (
-                <i className="ring" style={{ left: '50%', top: '50%' }} />
+              {peelable(p.id) && p.layers.length > 1 && p.dive.length === 0 && (
+                <i className={`dogear ${hint >= 1 ? 'hot' : ''}`} />
+              )}
+              {avail.some(s => s.cond.kind === 'overlay' && (s.cond.a === p.id || s.cond.b === p.id)) && hint >= 1 && (
+                <i className="ring hot" style={{ left: '50%', top: '50%' }} />
               )}
               {def.goal === p.id && <i className="beacon" />}
+              {hero && hero.panel === p.id && (() => {
+                const m = viewToPanel(v, hero.x, hero.y)
+                if (!m.inside) return null
+                return <div className="hero" style={{ left: `${m.x}%`, top: `${m.y}%` }} />
+              })()}
             </div>
           )
         })}
 
-        {hero && (() => {
-          const hp = panels.find(p => p.id === hero.panel)
-          if (!hp || zoom === hero.panel) return null
-          const r = cellRect(hp.cell)
-          return (
-            <div
-              className="hero"
-              style={{ left: `${r.x + r.w * hero.x / 100}%`, top: `${r.y + r.h * hero.y / 100}%` }}
-            />
-          )
-        })()}
-
         <svg className="beams" viewBox="0 0 100 100" preserveAspectRatio="none">
-          {beams.map(b => (
-            <line key={b.id} x1={b.x1} y1={b.y1} x2={b.x2} y2={b.y2} />
-          ))}
-          {resonance && (
-            <line className="res" x1={resonance.x1} y1={resonance.y1} x2={resonance.x2} y2={resonance.y2} />
-          )}
+          {beams.map(b => <line key={b.id} x1={b.x1} y1={b.y1} x2={b.x2} y2={b.y2} />)}
+          {hintBeams.map(b => <line key={`h${b.id}`} className="res" x1={b.x1} y1={b.y1} x2={b.x2} y2={b.y2} />)}
+          {resonance && <line className="res" x1={resonance.x1} y1={resonance.y1} x2={resonance.x2} y2={resonance.y2} />}
         </svg>
-
-        {walker && (
-          <div
-            className="walker"
-            style={{
-              left: `${walker.x}%`,
-              top: `${walker.y}%`,
-              transitionDuration: walker.fast ? '0.9s' : '1.9s',
-            }}
-          />
-        )}
 
         {through && (
           <div className="through">
             <img src={through} draggable={false} alt="" />
-          </div>
-        )}
-
-        {zoom && zoomDef && zoomPanel && (
-          <div className="zoom" onPointerDown={() => setZoom(null)}>
-            <div className="zoom-frame" onPointerDown={e => e.stopPropagation()}>
-              <img src={zoomPanel.layers[0].img} draggable={false} alt="" />
-              {zoomPanel.layers[0].year && <div className="pnl-year in-zoom">{zoomPanel.layers[0].year}</div>}
-              {hero && zoom === hero.panel && (
-                <div className="hero in" style={{ left: `${hero.x}%`, top: `${hero.y}%` }} />
-              )}
-              {(zoomDef.spots ?? []).map(sp => {
-                const active = spotStepsFor(zoom).some(s => (s.cond as { spot: string }).spot === sp.id)
-                return (
-                  <div
-                    key={sp.id}
-                    className="zoom-spot"
-                    style={{ left: `${sp.x}%`, top: `${sp.y}%`, width: `${sp.w}%`, height: `${sp.h}%` }}
-                    onPointerDown={e => { e.stopPropagation(); clickSpot(zoom, sp.id) }}
-                  >
-                    {active && <i className="ring in" />}
-                  </div>
-                )
-              })}
-            </div>
           </div>
         )}
       </div>
