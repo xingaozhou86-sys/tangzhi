@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Board } from '../world/engine'
 import { CH1, CH2, CH3, CH5, CH6, CHX1, CHX2, CHX3, CHX4 } from './chapters'
 import { ActFour } from './ActFour'
@@ -46,8 +46,26 @@ export default function Game() {
   const [wrappers, setWrappers] = useState(0)
 
   const stage = idx >= 0 && idx < STAGES.length ? STAGES[idx] : null
+  const scoreRef = useRef<HTMLAudioElement | null>(null)
+
+  const startScore = () => {
+    if (scoreRef.current) return
+    const a = new Audio('/sfx/theme.wav')
+    a.loop = true
+    a.volume = 0
+    a.play().then(() => {
+      let v = 0
+      const t = window.setInterval(() => {
+        v = Math.min(0.16, v + 0.02)
+        a.volume = v
+        if (v >= 0.16) window.clearInterval(t)
+      }, 150)
+      scoreRef.current = a
+    }).catch(() => {})
+  }
 
   const advance = () => {
+    startScore()
     setCard(true)
   }
 
@@ -90,7 +108,7 @@ export default function Game() {
       {!card && stage?.kind === 'act4' && <ActFour onDone={advance} />}
       {!card && stage?.kind === 'epilogue' && <Epilogue />}
 
-      {idx >= 0 && (
+      {idx >= 0 && wrappers > 0 && (
         <div className="wstrip">
           {[0, 1, 2, 3, 4].map(k => (
             <i key={k} className={`wslot ${wrappers > k ? 'got' : ''}`} />

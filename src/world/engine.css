@@ -424,3 +424,8 @@
 .pnl-art {
   box-shadow: inset 0 0 0 1px rgba(255, 230, 180, 0.16), inset 0 0 26px rgba(0, 0, 0, 0.28);
 }
+
+/* 拖拽时的物理倾斜 */
+.pnl.drag {
+  transform: rotate(1.4deg) scale(1.02);
+}

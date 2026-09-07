@@ -355,3 +355,24 @@
   opacity: 0.05;
   mix-blend-mode: overlay;
 }
+
+/* 幕卡电影黑边 */
+.card::before, .card::after {
+  content: '';
+  position: fixed;
+  left: 0;
+  right: 0;
+  height: 8vh;
+  background: #000;
+  z-index: 61;
+}
+.card::before { top: 0; animation: bar-top 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.card::after { bottom: 0; animation: bar-bottom 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+@keyframes bar-top {
+  from { transform: translateY(-100%); }
+  to { transform: translateY(0); }
+}
+@keyframes bar-bottom {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}

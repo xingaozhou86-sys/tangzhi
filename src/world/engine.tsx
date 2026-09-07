@@ -59,7 +59,13 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
   const [zoom, setZoom] = useState<string | null>(null)
   const [beams, setBeams] = useState<Beam[]>([])
   const [walker, setWalker] = useState<{ x: number; y: number; fast?: boolean } | null>(null)
-  const [through, setThrough] = useState<string | null>(null)
+  const [through, setThrough] = useState<string | null>(def.panels[0]?.img ?? null)
+
+  // 开场穿画入场
+  useEffect(() => {
+    const t = window.setTimeout(() => setThrough(null), 1150)
+    return () => window.clearTimeout(t)
+  }, [def.id])
   const [drag, setDrag] = useState<{ id: string; x: number; y: number } | null>(null)
   const [hoverCell, setHoverCell] = useState<Cell | null>(null)
   const [joined, setJoined] = useState<string[]>([])
