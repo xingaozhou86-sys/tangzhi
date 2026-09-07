@@ -1,0 +1,266 @@
+/* ------------------------------------------------------------
+   《情况属实》· 世界引擎视觉
+   整面墙就是屏幕：暖纸底、木框、虚线空框、漏光的缝
+   ------------------------------------------------------------ */
+.board-wrap {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 90% at 50% 42%, rgba(96, 72, 44, 0.34), rgba(0, 0, 0, 0) 60%),
+    radial-gradient(140% 120% at 50% 120%, rgba(40, 26, 14, 0.65), rgba(0, 0, 0, 0) 55%),
+    #151009;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+.board-wrap::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 240, 210, 0.016) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, rgba(255, 240, 210, 0.012) 0 1px, transparent 1px 3px);
+  mix-blend-mode: overlay;
+}
+
+.board {
+  position: relative;
+  width: min(94vw, 88vh);
+  aspect-ratio: 1 / 1;
+}
+
+/* 空画框：墙上淡淡的胶带痕 */
+.slot {
+  position: absolute;
+  border: 1.5px dashed rgba(232, 214, 170, 0.13);
+  border-radius: 3px;
+  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.35);
+}
+
+/* 画 */
+.pnl {
+  position: absolute;
+  border-radius: 2px;
+  box-shadow:
+    0 0 0 5px #241a10,
+    0 0 0 6px rgba(255, 228, 170, 0.07),
+    0 22px 44px rgba(0, 0, 0, 0.6);
+  transition: left 0.55s cubic-bezier(0.22, 0.9, 0.24, 1), top 0.55s cubic-bezier(0.22, 0.9, 0.24, 1),
+    box-shadow 0.5s ease, opacity 0.4s ease;
+  cursor: grab;
+  z-index: 2;
+}
+.pnl.drag {
+  transition: none;
+  cursor: grabbing;
+  z-index: 12;
+  box-shadow:
+    0 0 0 5px #2c2114,
+    0 0 0 6px rgba(255, 232, 180, 0.22),
+    0 34px 70px rgba(0, 0, 0, 0.75);
+}
+.pnl.gone { opacity: 0; pointer-events: none; }
+.pnl.born { animation: pnl-born 0.7s cubic-bezier(0.2, 0.9, 0.3, 1.2); }
+@keyframes pnl-born {
+  from { transform: scale(0.72); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+.pnl.lit {
+  box-shadow:
+    0 0 0 5px #241a10,
+    0 0 0 6px rgba(255, 226, 160, 0.35),
+    0 0 46px rgba(255, 200, 110, 0.4),
+    0 22px 44px rgba(0, 0, 0, 0.6);
+}
+.pnl-art {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  border-radius: 1px;
+}
+.pnl.dim .pnl-art { filter: brightness(0.5) saturate(0.65); }
+.pnl-year {
+  position: absolute;
+  left: 5%;
+  top: 5%;
+  font-size: clamp(13px, 1.7vmin, 20px);
+  letter-spacing: 0.35em;
+  color: rgba(255, 236, 200, 0.85);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
+  writing-mode: vertical-rl;
+  pointer-events: none;
+}
+.pnl-year.in-zoom { font-size: clamp(16px, 2.4vmin, 28px); z-index: 3; }
+
+/* 画缝漏光 */
+.leak {
+  position: absolute;
+  pointer-events: none;
+  opacity: 0.5;
+  animation: leak-breathe 3.4s ease-in-out infinite;
+}
+.leak.side-l, .leak.side-r {
+  top: 38%;
+  width: 7px;
+  height: 24%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255, 224, 160, 0.75), transparent 72%);
+  filter: blur(1px);
+}
+.leak.side-l { left: -8px; }
+.leak.side-r { right: -8px; }
+.leak.side-t, .leak.side-b {
+  left: 38%;
+  height: 7px;
+  width: 24%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255, 224, 160, 0.75), transparent 72%);
+  filter: blur(1px);
+}
+.leak.side-t { top: -8px; }
+.leak.side-b { bottom: -8px; }
+.leak.live { opacity: 1; animation-duration: 1.6s; }
+@keyframes leak-breathe {
+  0%, 100% { transform: scale(0.82); }
+  50% { transform: scale(1.12); }
+}
+
+/* 圆圈提示：画中世界的那枚圆 */
+.ring {
+  position: absolute;
+  width: 34px;
+  height: 34px;
+  margin: -17px 0 0 -17px;
+  border: 2px solid rgba(255, 232, 180, 0.9);
+  border-radius: 50%;
+  box-shadow: 0 0 14px rgba(255, 214, 140, 0.55), inset 0 0 8px rgba(255, 214, 140, 0.35);
+  animation: ring-pulse 2.3s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 5;
+}
+.ring.in {
+  width: 52px;
+  height: 52px;
+  margin: 0;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  border-width: 2.5px;
+}
+@keyframes ring-pulse {
+  0%, 100% { opacity: 0.35; scale: 0.86; }
+  50% { opacity: 1; scale: 1.06; }
+}
+
+/* 可揭的角 */
+.dogear {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  width: 26px;
+  height: 26px;
+  background: linear-gradient(135deg, transparent 50%, rgba(255, 234, 190, 0.9) 50%);
+  border-radius: 0 0 3px 0;
+  filter: drop-shadow(0 0 8px rgba(255, 220, 150, 0.6));
+  animation: ear-lift 1.8s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 5;
+}
+@keyframes ear-lift {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-3px, -3px); }
+}
+
+/* 连画的光路 */
+.beams {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 8;
+  pointer-events: none;
+}
+.beams line {
+  stroke: rgba(255, 226, 160, 0.9);
+  stroke-width: 0.45;
+  filter: drop-shadow(0 0 1.6px rgba(255, 210, 130, 0.9));
+  animation: beam-in 1.7s ease-out forwards;
+}
+@keyframes beam-in {
+  0% { opacity: 0; }
+  18% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* 走过缝的人 */
+.walker {
+  position: absolute;
+  width: 3%;
+  aspect-ratio: 1 / 2.4;
+  margin-left: -1.5%;
+  margin-top: -3.6%;
+  z-index: 9;
+  pointer-events: none;
+  transition: left 1.9s linear, top 1.9s linear;
+  filter: drop-shadow(0 0 6px rgba(255, 230, 170, 0.7));
+}
+.walker::before {
+  content: '';
+  position: absolute;
+  left: 22%;
+  top: 0;
+  width: 56%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #1c130a;
+}
+.walker::after {
+  content: '';
+  position: absolute;
+  left: 12%;
+  bottom: 0;
+  width: 76%;
+  height: 76%;
+  border-radius: 46% 46% 30% 30%;
+  background: #1c130a;
+}
+
+/* 入画 */
+.zoom {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  background: rgba(10, 7, 4, 0.9);
+  animation: zoom-in 0.4s ease;
+  cursor: zoom-out;
+}
+@keyframes zoom-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.zoom-frame {
+  position: relative;
+  width: 88%;
+  box-shadow:
+    0 0 0 6px #241a10,
+    0 0 0 7px rgba(255, 228, 170, 0.1),
+    0 30px 80px rgba(0, 0, 0, 0.8);
+  cursor: default;
+}
+.zoom-frame img {
+  display: block;
+  width: 100%;
+  border-radius: 1px;
+}
+.zoom-spot {
+  position: absolute;
+  cursor: pointer;
+  z-index: 2;
+}
