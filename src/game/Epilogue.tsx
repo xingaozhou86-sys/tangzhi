@@ -25,7 +25,7 @@ export function Epilogue() {
   useEffect(() => {
     const a = new Audio('/story/amb-wind.mp3')
     a.loop = true
-    a.volume = 0.24
+    a.volume = 0.12
     a.play().catch(() => {})
     return () => { a.pause() }
   }, [])
@@ -73,7 +73,7 @@ export function Epilogue() {
 
       {phase === 'end' && (
         <div className="ep-end">
-          <div className="ep-end-title">情况属实</div>
+          <div className="ep-end-title">糖纸</div>
           <div className="ep-end-line">糖纸还在，天就亮了。</div>
           <button className="ep-again" onClick={() => window.location.reload()}>再玩一次</button>
         </div>

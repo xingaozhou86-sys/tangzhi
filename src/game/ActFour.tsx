@@ -21,7 +21,7 @@ export function ActFour({ onDone }: { onDone: () => void }) {
   useEffect(() => {
     const a = new Audio('/act4/press-loop.mp3')
     a.loop = true
-    a.volume = 0.22
+    a.volume = 0.11
     a.play().catch(() => {})
     idleRef.current = window.setTimeout(() => setHint(true), 1600)
     return () => { a.pause(); window.clearTimeout(idleRef.current) }

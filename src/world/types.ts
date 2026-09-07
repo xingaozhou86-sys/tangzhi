@@ -49,6 +49,7 @@ export interface Fx {
   sfx?: string
   music?: string
   walk?: boolean
+  walkPath?: string[]
   keepZoom?: boolean
   collect?: boolean
   done?: boolean

@@ -63,7 +63,7 @@ export const CH2: ChapterDef = {
     { id: 'c-rest', cond: { kind: 'connect', a: 'street', aside: 'b', b: 'rest' }, after: ['s-lantern'],
       fx: { walk: true, sfx: '/story/sfx-chime.mp3' } },
     { id: 'end', cond: { kind: 'auto' }, after: ['c-street', 'c-moon', 'c-rest'],
-      fx: { glow: 'rest', collect: true, done: true, sfx: '/story/sfx-chime.mp3' } },
+      fx: { glow: 'rest', collect: true, done: true, sfx: '/story/sfx-chime.mp3', walkPath: ['room', 'street', 'rest'] } },
   ],
 }
 
@@ -143,7 +143,7 @@ export const CH6: ChapterDef = {
     { id: 'c-village', cond: { kind: 'connect', a: 'store', aside: 'r', b: 'village' }, after: ['s-give'],
       fx: { walk: true, sfx: '/story/sfx-chime.mp3' } },
     { id: 'end', cond: { kind: 'auto' }, after: ['c-village'],
-      fx: { glow: 'village', collect: true, done: true } },
+      fx: { glow: 'village', collect: true, done: true, walkPath: ['store', 'village'] } },
   ],
 }
 

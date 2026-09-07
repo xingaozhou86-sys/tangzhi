@@ -40,7 +40,7 @@ function cellAt(x: number, y: number): Cell | null {
   return null
 }
 
-function play(src: string, vol = 0.5) {
+function play(src: string, vol = 0.38) {
   const a = new Audio(src)
   a.volume = vol
   a.play().catch(() => {})
@@ -58,7 +58,7 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
   const [hint, setHint] = useState(false)
   const [zoom, setZoom] = useState<string | null>(null)
   const [beams, setBeams] = useState<Beam[]>([])
-  const [walker, setWalker] = useState<{ x: number; y: number } | null>(null)
+  const [walker, setWalker] = useState<{ x: number; y: number; fast?: boolean } | null>(null)
   const [through, setThrough] = useState<string | null>(null)
   const [drag, setDrag] = useState<{ id: string; x: number; y: number } | null>(null)
   const [hoverCell, setHoverCell] = useState<Cell | null>(null)
@@ -122,6 +122,20 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
         }
       }
     }
+    if (fx.walkPath) {
+      const pts = fx.walkPath
+        .map(id => panelsRef.current.find(q => q.id === id))
+        .filter((q): q is PanelState => !!q)
+        .map(q => { const r = cellRect(q.cell); return { x: r.x + r.w / 2, y: r.y + r.h / 2 } })
+      if (pts.length > 1) {
+        setWalker({ ...pts[0], fast: true })
+        pts.forEach((pt, i) => {
+          if (i === 0) return
+          window.setTimeout(() => setWalker({ ...pt, fast: true }), 120 + i * 950)
+        })
+        window.setTimeout(() => setWalker(null), 120 + pts.length * 950 + 500)
+      }
+    }
     window.setTimeout(() => {
       const applyFx = () => {
         setPanels(prev => {
@@ -153,14 +167,19 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
     }, delay)
   }
 
-  // 环境声
+  // 环境声：淡入到很低的音量，只当气氛不当主角
   useEffect(() => {
     if (!def.ambient) return
     const a = new Audio(def.ambient)
     a.loop = true
-    a.volume = 0.26
+    a.volume = 0
     a.play().catch(() => {})
-    return () => { a.pause() }
+    let v = 0
+    const t = window.setInterval(() => {
+      v = Math.min(0.13, v + 0.016)
+      a.volume = v
+    }, 120)
+    return () => { window.clearInterval(t); a.pause() }
   }, [def.ambient])
 
   // 开场第一次提示来得快一些
@@ -313,6 +332,18 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
         }
       }
     }
+    // 叠画共振：拖到目标画上时，目标画亮起来
+    for (const s of avail) {
+      if (s.cond.kind !== 'overlay') continue
+      const c = s.cond
+      if (c.a !== p.id) continue
+      const b = panels.find(q => q.id === c.b)
+      if (b && hoverCell === b.cell) {
+        const r = cellRect(b.cell)
+        const m1 = { x: drag.x + CW / 2, y: drag.y + CW / 2 }
+        return { x1: m1.x, y1: m1.y, x2: r.x + r.w / 2, y2: r.y + r.h / 2, other: b.id }
+      }
+    }
     return null
   })()
 
@@ -369,7 +400,7 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
                 return <i key={s.id} className="ring" style={{ left: `${spot.x + spot.w / 2}%`, top: `${spot.y + spot.h / 2}%` }} />
               })}
               {hint && peelable(p.id) && p.layers.length > 1 && <i className="dogear" />}
-              {hint && avail.some(s => s.cond.kind === 'overlay' && s.cond.a === p.id) && (
+              {hint && avail.some(s => s.cond.kind === 'overlay' && (s.cond.a === p.id || s.cond.b === p.id)) && (
                 <i className="ring" style={{ left: '50%', top: '50%' }} />
               )}
             </div>
@@ -385,7 +416,16 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
           )}
         </svg>
 
-        {walker && <div className="walker" style={{ left: `${walker.x}%`, top: `${walker.y}%` }} />}
+        {walker && (
+          <div
+            className="walker"
+            style={{
+              left: `${walker.x}%`,
+              top: `${walker.y}%`,
+              transitionDuration: walker.fast ? '0.9s' : '1.9s',
+            }}
+          />
+        )}
 
         {through && (
           <div className="through">

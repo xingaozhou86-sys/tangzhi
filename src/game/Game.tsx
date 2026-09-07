@@ -6,7 +6,7 @@ import { Epilogue } from './Epilogue'
 import './game.css'
 
 // ------------------------------------------------------------
-// 《情况属实》· 编排：片头 → 六幕 → 回程
+// 《糖纸》· 编排：片头 → 六幕 → 回程
 // ------------------------------------------------------------
 type Stage =
   | { kind: 'chapter'; def: typeof CH1 }
@@ -66,8 +66,8 @@ export default function Game() {
         <div className="t-screen">
           <div className="t-bg" />
           <div className="t-inner">
-            <div className="t-seal">糖纸</div>
-            <h1 className="t-title">情况属实</h1>
+            <div className="t-seal">半生</div>
+            <h1 className="t-title">糖纸</h1>
             <div className="t-sub">一个人，五十年，五张糖纸</div>
             <button className="t-start" onClick={advance}>开 始</button>
           </div>
