@@ -373,3 +373,54 @@
     0 0 0 6px rgba(255, 232, 180, 0.16),
     0 28px 54px rgba(0, 0, 0, 0.68);
 }
+
+/* ---------- 空间感：连画桥 / 穿画 ---------- */
+
+/* 连上之后，两框之间的墙消失了 */
+.bridge {
+  position: absolute;
+  z-index: 6;
+  pointer-events: none;
+  animation: bridge-in 0.9s ease both;
+}
+.bridge.v {
+  background: linear-gradient(90deg,
+    rgba(18, 12, 6, 0.95) 0%, rgba(255, 222, 150, 0.34) 50%, rgba(18, 12, 6, 0.95) 100%);
+}
+.bridge.h {
+  background: linear-gradient(180deg,
+    rgba(18, 12, 6, 0.95) 0%, rgba(255, 222, 150, 0.34) 50%, rgba(18, 12, 6, 0.95) 100%);
+}
+@keyframes bridge-in {
+  from { opacity: 0; filter: blur(3px); }
+  to { opacity: 1; filter: blur(0.6px); }
+}
+
+/* 穿画：新画扑面而来，你穿过去，它落回墙上 */
+.through {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  background: rgba(8, 5, 3, 0.35);
+}
+.through img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  animation: through-fly 1.2s cubic-bezier(0.24, 0.8, 0.3, 1) both;
+  box-shadow: 0 0 0 6px #241a10, 0 40px 120px rgba(0, 0, 0, 0.9);
+}
+@keyframes through-fly {
+  0% { transform: scale(0.58); opacity: 0; }
+  22% { opacity: 1; }
+  78% { transform: scale(1.05); opacity: 1; }
+  100% { transform: scale(1.14); opacity: 0; }
+}
+
+/* 画框内侧一道金线 */
+.pnl-art {
+  box-shadow: inset 0 0 0 1px rgba(255, 230, 180, 0.16), inset 0 0 26px rgba(0, 0, 0, 0.28);
+}

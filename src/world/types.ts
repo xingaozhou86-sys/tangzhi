@@ -61,6 +61,7 @@ export interface ChapterDef {
   no: string
   name: string
   poem: string
+  where?: string
   ambient?: string
   panels: PanelDef[]
   steps: Step[]

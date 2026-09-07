@@ -331,3 +331,27 @@
   background: url(/tex/paper.png) 0 0 / 90% repeat, linear-gradient(175deg, #efe3c8, #e2d2b0);
   background-blend-mode: multiply;
 }
+
+/* 幕卡档案章 */
+.card-where {
+  margin-top: 1vh;
+  padding: 0.35em 0.9em;
+  border: 1.5px solid rgba(160, 50, 36, 0.85);
+  color: rgba(200, 90, 70, 0.95);
+  font-size: clamp(11px, 1.6vmin, 15px);
+  letter-spacing: 0.3em;
+  border-radius: 2px;
+  transform: rotate(-1.5deg);
+}
+
+/* 全片胶片颗粒 */
+.game::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  pointer-events: none;
+  background: url(/tex/paper.png) 0 0 / 50vmin repeat;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+}

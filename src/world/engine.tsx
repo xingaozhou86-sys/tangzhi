@@ -59,6 +59,7 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
   const [zoom, setZoom] = useState<string | null>(null)
   const [beams, setBeams] = useState<Beam[]>([])
   const [walker, setWalker] = useState<{ x: number; y: number } | null>(null)
+  const [through, setThrough] = useState<string | null>(null)
   const [drag, setDrag] = useState<{ id: string; x: number; y: number } | null>(null)
   const [hoverCell, setHoverCell] = useState<Cell | null>(null)
   const [joined, setJoined] = useState<string[]>([])
@@ -122,24 +123,33 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
       }
     }
     window.setTimeout(() => {
-      setPanels(prev => {
-        let next = prev
-        if (fx.spawn) {
-          const d = fx.spawn.def
-          const pref = fx.spawn.cells ?? [0, 1, 2, 3]
-          const taken = new Set(next.map(q => q.cell))
-          const cell = pref.find(c => !taken.has(c))
-          if (cell != null) next = [...next, { ...toState(d), cell, born: true }]
-        }
-        if (fx.swap) next = next.map(q => q.id === fx.swap!.panel
-          ? { ...q, dim: fx.swap!.undim ? false : q.dim, layers: [{ ...q.layers[0], img: fx.swap!.img }] } : q)
-        if (fx.setEdges) next = next.map(q => q.id === fx.setEdges!.panel
-          ? { ...q, layers: [{ ...q.layers[0], edges: fx.setEdges!.edges }] } : q)
-        if (fx.glow) next = next.map(q => q.id === fx.glow ? { ...q, lit: true } : q)
-        return next
-      })
-      if (fx.collect) onCollect()
-      if (fx.done) window.setTimeout(onDone, 1600)
+      const applyFx = () => {
+        setPanels(prev => {
+          let next = prev
+          if (fx.spawn) {
+            const d = fx.spawn.def
+            const pref = fx.spawn.cells ?? [0, 1, 2, 3]
+            const taken = new Set(next.map(q => q.cell))
+            const cell = pref.find(c => !taken.has(c))
+            if (cell != null) next = [...next, { ...toState(d), cell, born: true }]
+          }
+          if (fx.swap) next = next.map(q => q.id === fx.swap!.panel
+            ? { ...q, dim: fx.swap!.undim ? false : q.dim, layers: [{ ...q.layers[0], img: fx.swap!.img }] } : q)
+          if (fx.setEdges) next = next.map(q => q.id === fx.setEdges!.panel
+            ? { ...q, layers: [{ ...q.layers[0], edges: fx.setEdges!.edges }] } : q)
+          if (fx.glow) next = next.map(q => q.id === fx.glow ? { ...q, lit: true } : q)
+          return next
+        })
+        if (fx.collect) onCollect()
+        if (fx.done) window.setTimeout(onDone, 1600)
+      }
+      // 穿画：新画先扑面而来，再落回墙上
+      if (fx.spawn) {
+        setThrough(fx.spawn.def.img)
+        window.setTimeout(() => { setThrough(null); applyFx() }, 1200)
+      } else {
+        applyFx()
+      }
     }, delay)
   }
 
@@ -306,12 +316,30 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
     return null
   })()
 
+  // 已连上的画对：缝要"消失"，两幅画变一个连续空间
+  const linkedPairs = def.steps
+    .filter(s => done.includes(s.id) && s.cond.kind === 'connect')
+    .map(s => s.cond as { kind: 'connect'; a: string; aside: Side; b: string })
+
   return (
     <div className="board-wrap">
       <div className="board" ref={boardRef}>
         {([0, 1, 2, 3] as Cell[]).map(c => {
           const r = cellRect(c)
           return <div key={`slot-${c}`} className="slot" style={{ left: `${r.x}%`, top: `${r.y}%`, width: `${r.w}%`, height: `${r.h}%` }} />
+        })}
+
+        {linkedPairs.map((lp, i) => {
+          const a = panels.find(p => p.id === lp.a)
+          const b = panels.find(p => p.id === lp.b)
+          if (!a || !b || neighbor(a.cell, lp.aside) !== b.cell) return null
+          const ra = cellRect(a.cell)
+          let st: React.CSSProperties
+          if (lp.aside === 'r') st = { left: `${ra.x + ra.w - 0.7}%`, top: `${ra.y + 1}%`, width: `${GAP + 1.4}%`, height: `${ra.h - 2}%` }
+          else if (lp.aside === 'l') st = { left: `${ra.x - GAP - 0.7}%`, top: `${ra.y + 1}%`, width: `${GAP + 1.4}%`, height: `${ra.h - 2}%` }
+          else if (lp.aside === 'b') st = { left: `${ra.x + 1}%`, top: `${ra.y + ra.h - 0.7}%`, width: `${ra.w - 2}%`, height: `${GAP + 1.4}%` }
+          else st = { left: `${ra.x + 1}%`, top: `${ra.y - GAP - 0.7}%`, width: `${ra.w - 2}%`, height: `${GAP + 1.4}%` }
+          return <div key={`br-${i}`} className={`bridge ${lp.aside === 'r' || lp.aside === 'l' ? 'v' : 'h'}`} style={st} />
         })}
 
         {panels.map(p => {
@@ -358,6 +386,12 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
         </svg>
 
         {walker && <div className="walker" style={{ left: `${walker.x}%`, top: `${walker.y}%` }} />}
+
+        {through && (
+          <div className="through">
+            <img src={through} draggable={false} alt="" />
+          </div>
+        )}
 
         {zoom && zoomDef && zoomPanel && (
           <div className="zoom" onPointerDown={() => setZoom(null)}>

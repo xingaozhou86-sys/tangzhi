@@ -27,11 +27,11 @@ const STAGES: Stage[] = [
   { kind: 'epilogue' },
 ]
 
-const ACT4_CARD = { no: '柒', name: '签字', poem: '五个字，他签了一生。' }
-const EP_CARD = { no: '终', name: '回程', poem: '往回走，走回糖纸发光的地方。' }
+const ACT4_CARD = { no: '柒', name: '签字', poem: '五个字，他签了一生。', where: '一九七一 · 厂办公室' }
+const EP_CARD = { no: '终', name: '回程', poem: '往回走，走回糖纸发光的地方。', where: '如今' }
 
 function cardOf(s: Stage) {
-  if (s.kind === 'chapter') return { no: s.def.no, name: s.def.name, poem: s.def.poem }
+  if (s.kind === 'chapter') return { no: s.def.no, name: s.def.name, poem: s.def.poem, where: s.def.where ?? '' }
   if (s.kind === 'act4') return ACT4_CARD
   return EP_CARD
 }
@@ -76,7 +76,7 @@ export default function Game() {
 
       {card && idx + 1 < STAGES.length && (() => {
         const c = cardOf(STAGES[idx + 1])
-        return <Card no={c.no} name={c.name} poem={c.poem} />
+        return <Card no={c.no} name={c.name} poem={c.poem} where={c.where} />
       })()}
 
       {!card && stage?.kind === 'chapter' && (
@@ -101,12 +101,13 @@ export default function Game() {
   )
 }
 
-function Card({ no, name, poem }: { no: string; name: string; poem: string }) {
+function Card({ no, name, poem, where }: { no: string; name: string; poem: string; where: string }) {
   return (
     <div className="card">
       <div className="card-no">第{no}幕</div>
       <div className="card-name">{name}</div>
       <div className="card-poem">{poem}</div>
+      {where && <div className="card-where">{where}</div>}
     </div>
   )
 }
