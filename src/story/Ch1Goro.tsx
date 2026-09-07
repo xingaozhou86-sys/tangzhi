@@ -1,46 +1,44 @@
 import { useState } from 'react'
-import { PanelField } from './goro'
-import type { GPanel, GWalker } from './goro'
-import { LIGHTS, useLoop, useTimers, playOnce, dbgPh } from './ui'
+import { GridField } from './grid'
+import type { GPanel, GRing, GWalker } from './grid'
+import { useLoop, useTimers, playOnce, dbgPh } from './ui'
 import { CollectCard, PaperBit } from './bits'
 
 // ------------------------------------------------------------
-// 第一章 · 夜班（2025）—— 画中世界式 · 自由顺序
-// 开场只有一幅画：保安亭。他坐在里面，窗外一片黑。
-// 入画，把「窗外的楼道」从窗里揭下来——它落成一幅新画。
-// 从这一刻起没有顺序：
-//   · 楼道可以立刻拖去贴亭子的右边（缝会亮），他起身走过去；
-//   · 也可以先入画楼道，把尽头亮窗里的「对面楼」先揭下来；
-//   · 对面楼挂到亭子正下方，灯光灌进亭窗。
-// 两条缝都连上以后：他走回桌前坐下，登记本显影，
-// 第一角糖纸就在本子里。
+// 第一章 · 夜班（2025）—— 格子墙 · 真谜题
+// 墙上四个空画框，只有保安亭挂在左上角。
+// 入画：窗外的楼道在发光——揭下来，它飞进角落的空框。
+// 把它拖到亭子的右边（缝会亮），两幅连成一幅：
+//   他起身，自己走过缝，在楼道尽头的亮窗前停下。
+// 入画楼道，把尽头窗里的「对面楼」揭下来。
+// 把它挪到亭子正下方——灯光灌进亭窗，
+// 他走回桌前坐下，登记本显影，第一角糖纸在本子里。
+// 没有顺序，没有指引光粒；只有你很久不动，圆圈才出现。
 // ------------------------------------------------------------
 
 type Ph = 'start' | 'play' | 'lit' | 'collect' | 'done'
 
 const BOOTH: GPanel = {
-  id: 'booth', img: '/story/a1.webp', x: 19, y: 13, w: 62,
+  id: 'booth', img: '/story/a1.webp', slot: 0,
   ports: [{ side: 'r', at: 50, key: 'seam' }, { side: 'b', at: 55, key: 'lamp' }],
   zoomable: true,
 }
-const HALL: GPanel = {
-  id: 'hall', img: '/story/a1-hall.webp', x: 30, y: 56, w: 40,
+const HALL = (slot: number): GPanel => ({
+  id: 'hall', img: '/story/a1-hall.webp', slot,
   ports: [{ side: 'l', at: 50, key: 'seam' }], zoomable: true,
-}
-const BELOW: GPanel = {
-  id: 'below', img: '/story/a1-below.webp', x: 60, y: 64, w: 30,
+})
+const BELOW = (slot: number): GPanel => ({
+  id: 'below', img: '/story/a1-below.webp', slot,
   ports: [{ side: 't', at: 55, key: 'lamp' }], zoomable: true,
-}
+})
 
 const inRect = (rx: number, ry: number, x0: number, y0: number, x1: number, y1: number) =>
   rx >= x0 && rx <= x1 && ry >= y0 && ry <= y1
 
 export default function Ch1Goro({ onDone }: { onDone: () => void }) {
   const D = dbgPh()
-  const initPhase: Ph =
-    D === 'done' ? 'done' : D === 'collect' ? 'collect'
-    : D === 'lit' ? 'lit' : 'play'
-  const [phase, setPhase] = useState<Ph>(D ? initPhase : 'start')
+  const [phase, setPhase] = useState<Ph>(
+    D === 'done' ? 'done' : D === 'collect' ? 'collect' : D === 'lit' ? 'lit' : D ? 'play' : 'start')
   const [outHall, setOutHall] = useState(!!D)
   const [outBelow, setOutBelow] = useState(D === 'belowOut' || D === 'lit' || D === 'collect' || D === 'done')
   const [fused, setFused] = useState<[string, string][]>(() =>
@@ -51,26 +49,35 @@ export default function Ch1Goro({ onDone }: { onDone: () => void }) {
   const lampOn = fused.some(([a, b]) => (a === 'booth' && b === 'below') || (a === 'below' && b === 'booth'))
   const [walker, setWalker] = useState<GWalker | null>(
     D === 'seam' || D === 'belowOut' ? { panel: 'hall', rx: 86, ry: 78, facing: 1 } : null)
+  // 格子占用：决定新揭下来的画飞进哪个空框
+  const [occ, setOcc] = useState<Record<number, string>>(() => {
+    const m: Record<number, string> = { 0: 'booth' }
+    if (D === 'lit' || D === 'collect' || D === 'done') return { 0: 'booth', 1: 'hall', 2: 'below' }
+    if (D === 'seam') return { 0: 'booth', 1: 'hall' }
+    if (D === 'belowOut') return { 0: 'booth', 1: 'hall', 3: 'below' }
+    if (D === 'hallOut') return { 0: 'booth', 3: 'hall' }
+    return m
+  })
   const later = useTimers()
   useLoop('/story/amb-hum.mp3', 0.15)
 
-  const panels: GPanel[] = [{ ...BOOTH, w: outHall || outBelow ? 44 : 62 }]
-  if (outHall) panels.push(HALL)
-  if (outBelow) panels.push(BELOW)
-  // 调试跳段：直接摆出连通后的位置
-  if (D === 'seam' || D === 'belowOut') {
-    panels[0] = { ...BOOTH, w: 44, x: 8, y: 29 }
-    panels[1] = { ...HALL, x: 52, y: 29 }
-    if (D === 'belowOut') panels[2] = { ...BELOW, x: 60, y: 64 }
-  }
-  if (D === 'lit' || D === 'collect' || D === 'done') {
-    panels[0] = { ...BOOTH, w: 44, x: 8, y: 24.9 }
-    panels[1] = { ...HALL, x: 52, y: 24.9 }
-    panels[2] = { ...BELOW, x: 15.7, y: 66.6 }
+  const firstEmpty = (prefer: number[]) =>
+    prefer.find((s) => occ[s] == null) ?? [3, 2, 1].find((s) => occ[s] == null) ?? 3
+
+  const panels: GPanel[] = [BOOTH]
+  if (outHall) panels.push(HALL(D === 'seam' || D === 'belowOut' || D === 'lit' || D === 'collect' || D === 'done' ? 1 : 3))
+  if (outBelow) panels.push(BELOW(D === 'lit' || D === 'collect' || D === 'done' ? 2 : firstEmpty([1, 3, 2])))
+
+  const onSlotChange = (id: string, to: number) => {
+    setOcc((o) => {
+      const n = { ...o }
+      Object.keys(n).forEach((k) => { if (n[+k] === id) delete n[+k] })
+      n[to] = id
+      return n
+    })
   }
 
   const walkBackAndLight = (delay: number) => {
-    // 两条缝都连上了：他走回桌前坐下，登记本显影
     later(() => setWalker({ panel: 'booth', rx: 56, ry: 76, facing: -1 }), delay)
     later(() => setWalker((w) => (w ? { ...w, fade: true } : w)), delay + 2000)
     later(() => setWalker(null), delay + 3000)
@@ -81,76 +88,52 @@ export default function Ch1Goro({ onDone }: { onDone: () => void }) {
     setFused((f) => [...f, [a, b]])
     if (key === 'seam') {
       playOnce('/story/sfx-chime.mp3', 0.4, 0.8)
-      // 他起身，自己走过缝，在楼道尽头的亮窗前停下
       later(() => setWalker({ panel: 'booth', rx: 56, ry: 76, facing: 1 }), 400)
       later(() => setWalker({ panel: 'hall', rx: 86, ry: 78, facing: 1 }), 1300)
-      if (lampOn) walkBackAndLight(3000)          // 灯早就接好了：他看一眼就往回走
+      if (lampOn) walkBackAndLight(3000)
     } else if (key === 'lamp') {
       playOnce('/story/sfx-chime.mp3', 0.4, 1)
-      if (seamOn) walkBackAndLight(700)           // 他在楼道里：灯光一亮他就回来了
-      // 只接了灯还没拼楼道：亭子亮起来（boothDark→0），光粒继续指那条没连的缝
+      if (seamOn) walkBackAndLight(700)
     }
   }
 
-  // 画里揭画：从发亮的细节往外拖，细节落成一幅新画
+  // 画里揭画：从发亮的细节往外拖，它飞进空框落成新画
+  const peelHall = () => {
+    setOutHall(true); setPhase('play')
+    playOnce('/story/sfx-chime.mp3', 0.35, 1.15)
+  }
+  const peelBelow = () => {
+    setOutBelow(true)
+    playOnce('/story/sfx-chime.mp3', 0.35, 1.3)
+  }
   const onSwipe = (id: string, _dx: number, _dy: number, rx0: number, ry0: number): boolean => {
-    if (id === 'booth' && !outHall && inRect(rx0, ry0, 10, 8, 50, 56)) {
-      setOutHall(true); setPhase('play')          // 从亭窗揭下「楼道」
-      playOnce('/story/sfx-chime.mp3', 0.35, 1.15)
-      return true
-    }
-    if (id === 'hall' && outHall && !outBelow && inRect(rx0, ry0, 72, 10, 99, 64)) {
-      setOutBelow(true)                           // 从尽头亮窗揭下「对面楼」（不用先拼楼道）
-      playOnce('/story/sfx-chime.mp3', 0.35, 1.3)
-      return true
-    }
+    if (id === 'booth' && !outHall && inRect(rx0, ry0, 10, 8, 50, 56)) { peelHall(); return true }
+    if (id === 'hall' && outHall && !outBelow && inRect(rx0, ry0, 72, 10, 99, 64)) { peelBelow(); return true }
     return false
   }
-
   const onTap = (id: string, rx: number, ry: number, zoomed: boolean): boolean => {
     if (!zoomed) return false
-    // 点一下发亮的细节 = 把它揭下来（和拖出来等效，但更容易被发现）
-    if (id === 'booth' && !outHall && inRect(rx, ry, 10, 8, 50, 56)) {
-      setOutHall(true); setPhase('play')
-      playOnce('/story/sfx-chime.mp3', 0.35, 1.15)
-      return true
-    }
-    if (id === 'hall' && outHall && !outBelow && inRect(rx, ry, 72, 10, 99, 64)) {
-      setOutBelow(true)
-      playOnce('/story/sfx-chime.mp3', 0.35, 1.3)
-      return true
-    }
-    if (id === 'booth' && phase === 'lit' && inRect(rx, ry, 20, 58, 50, 82)) {
-      setPhase('collect')                         // 翻开登记本
-      return false
-    }
+    if (id === 'booth' && !outHall && inRect(rx, ry, 10, 8, 50, 56)) { peelHall(); return true }
+    if (id === 'hall' && outHall && !outBelow && inRect(rx, ry, 72, 10, 99, 64)) { peelBelow(); return true }
+    if (id === 'booth' && phase === 'lit' && inRect(rx, ry, 20, 58, 50, 82)) { setPhase('collect'); return false }
     if (id === 'booth' && phase === 'collect' && inRect(rx, ry, 22, 60, 48, 84)) {
-      setPhase('done')                            // 收下糖纸
+      setPhase('done')
       later(onDone, 2800)
     }
     return false
   }
 
-  // 圆圈提示：只指「入口动作」；拼缝靠共振发光，不用圈
-  const rings =
-    phase === 'start' ? [{ panel: 'booth', rx: 30, ry: 32 }]
-    : !outBelow ? [{ panel: 'hall', rx: 86, ry: 34 }]
+  // 只有第一动立刻给圆圈；其余提示静置 12 秒才出现
+  const ringsNow: GRing[] = phase === 'start' ? [{ panel: 'booth', rx: 30, ry: 32 }] : []
+  const rings: GRing[] =
+    !outBelow && outHall ? [{ panel: 'hall', rx: 86, ry: 34 }]
+    : outHall && !seamOn ? [{ panel: 'hall', rx: 6, ry: 50 }]
+    : outBelow && !lampOn ? [{ panel: 'below', rx: 55, ry: 8 }]
     : phase === 'lit' ? [{ panel: 'booth', rx: 32, ry: 66 }]
     : []
 
-  // 光停在哪，下一步就在哪：优先指还没连上的缝
-  const lightAt =
-    phase === 'start' ? { panel: 'booth', rx: 30, ry: 34 }
-    : !seamOn ? { panel: 'hall', rx: 5, ry: 50 }
-    : !outBelow ? { panel: 'hall', rx: 88, ry: 36 }
-    : !lampOn ? { panel: 'below', rx: 55, ry: 8 }
-    : { panel: 'booth', rx: 30, ry: 66 }
-
-  // 所有没连上的缝从零秒开始漏光——它们自己在邀请你
-  const idleGlow = panels.map((g) => g.id)
-
   const boothDark = lampOn ? 0 : 0.55
-  const chairEmpty = seamOn && phase !== 'lit' && phase !== 'collect' && phase !== 'done'
+  const chairEmpty = seamOn && phase === 'play'
 
   const overlay = (id: string, _zoomed: boolean) => {
     if (id === 'booth') {
@@ -180,21 +163,19 @@ export default function Ch1Goro({ onDone }: { onDone: () => void }) {
 
   return (
     <>
-      <PanelField
+      <GridField
         panels={panels}
         fused={fused}
         onFuse={onFuse}
+        onSlotChange={onSlotChange}
         onTap={onTap}
         onSwipe={onSwipe}
         renderOverlay={overlay}
-        idleGlowIds={idleGlow}
         walker={walker}
         rings={rings}
+        ringsNow={ringsNow}
         bg="/story/a1.webp"
         intro={{ img: '/story/a1.webp' }}
-        lightAt={lightAt}
-        lightColor={LIGHTS[1].core}
-        lightGlow={LIGHTS[1].glow}
       />
       {phase === 'done' && (
         <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 60 }}>

@@ -39,6 +39,8 @@
 .story-card .t::after { content: ''; display: block; width: 130px; height: 1px; margin: 18px auto 0;
   background: linear-gradient(90deg, transparent, rgba(216,201,163,0.55), transparent); }
 .story-card .y { color: #6d6046; font-size: 15px; letter-spacing: 0.7em; text-indent: 0.7em; }
+.story-card .line { color: #8a7a58; font-size: 14px; letter-spacing: 0.32em; text-indent: 0.32em;
+  margin-top: 22px; opacity: 0.85; }
 
 /* 五格糖纸收集条：屏幕下缘，收到一角亮一格，最后一格是半张 */
 .wrapper-strip { position: fixed; left: 50%; bottom: 2.1vh; transform: translateX(-50%);

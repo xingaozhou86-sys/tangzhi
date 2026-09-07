@@ -1,23 +1,23 @@
 import { useState } from 'react'
-import { PanelField } from './goro'
-import type { GPanel, GWalker } from './goro'
-import { LIGHTS, useLoop, useTimers, playOnce, dbgPh } from './ui'
+import { GridField } from './grid'
+import type { GPanel, GRing, GWalker } from './grid'
+import { useLoop, useTimers, playOnce, dbgPh } from './ui'
 import { CollectCard, PaperBit } from './bits'
 
 // ------------------------------------------------------------
-// 第三章 · 下岗（1998）
-// 三层画叠在同一处：1998 名单 → 1988 通报 → 1978 红榜。
-// 卷角在呼吸——拖开（或点一下卷角），就回到十年前。
-// 揭下来的旧年份不会消失：它落成桌上一幅小小的记忆，
-// 微微发暗，还可以再入画翻看。
-// 揭到底，他的名字在红榜第一行发光。他从红榜里走出来，
-// 自己走到厂门前。点锁，锁落，画面灰掉；
+// 第三章 · 下岗（1998）—— 格子墙 · 揭年时间
+// 墙上：左上角一叠年画（1998 名单压在最上面），
+// 右上角从一开始就挂着厂门——锁着，安静地等你。
+// 把最上面那层拖去空框（或入画点卷角），它就落成一幅
+// 小小的记忆画：1998 拖开是 1988，1988 拖开是 1978。
+// 揭到底，红榜第一行他的名字发光，红榜右边的缝亮了——
+// 把厂门挪到红榜旁边（或直接对上），他自己走出红榜，
+// 走到厂门前。入画点锁，锁落，画面灰掉；
 // 门房窗台上的工作证翻开，里面是第三角糖纸。
 // ------------------------------------------------------------
 
 type Ch3Phase = 'peel' | 'gate' | 'unlocked' | 'card' | 'flip' | 'collect' | 'done'
 
-const HOME = { x: 24, y: 5 }
 const NAMES_1998 = ['王德福', '赵铁柱', '孙爱华', '周明礼', '吴桂兰', '顾长明', '郑长顺', '马秀珍', '刘广田', '陈淑云', '郭守义', '高凤英']
 
 function Poster({ year, zoomed, glowName, curl }: { year: 1998 | 1988 | 1978; zoomed: boolean; glowName?: boolean; curl?: boolean }) {
@@ -29,7 +29,6 @@ function Poster({ year, zoomed, glowName, curl }: { year: 1998 | 1988 | 1978; zo
       padding: '3% 4%', overflow: 'hidden', pointerEvents: 'none',
       boxShadow: '0 4px 16px rgba(0,0,0,0.45)',
     }}>
-      {/* 卷角：像在邀请人揭开这一层 */}
       {curl && (
         <div style={{
           position: 'absolute', right: 0, bottom: 0, width: '16%', height: '14%',
@@ -77,29 +76,35 @@ function Poster({ year, zoomed, glowName, curl }: { year: 1998 | 1988 | 1978; zo
 
 export default function Ch3Goro({ onDone }: { onDone: () => void }) {
   const D = dbgPh()
-  const [peeled, setPeeled] = useState(D === 'gate' || D === 'unlocked' || D === 'flip' || D === 'collect' || D === 'done' ? 2 : D === 'peel1' ? 1 : 0)
+  const solved = D === 'gate' || D === 'unlocked' || D === 'flip' || D === 'collect' || D === 'done'
+  const [peeled, setPeeled] = useState(D === 'peel1' ? 1 : solved ? 2 : 0)
   const [phase, setPhase] = useState<Ch3Phase>(
     D === 'unlocked' ? 'unlocked' : D === 'flip' ? 'flip' : D === 'collect' || D === 'done' ? 'collect'
     : D === 'gate' ? 'gate' : 'peel')
+  const [fused, setFused] = useState<[string, string][]>(solved ? [['y1978', 'gate']] : [])
   const [walker, setWalker] = useState<GWalker | null>(
     D === 'gate' ? { panel: 'gate', rx: 50, ry: 80, facing: 1 } : null)
   const later = useTimers()
   useLoop('/story/amb-wind.mp3', 0.22)
 
+  const walkOn = fused.length > 0
+
   const panels: GPanel[] = [
-    { id: 'y1978', img: '/story/a3-1978.webp', x: HOME.x, y: HOME.y, w: 50, zoomable: true },
-    { id: 'y1988', img: '/act4/workshop.webp', x: HOME.x, y: HOME.y, w: 50, zoomable: true,
-      hide: peeled >= 2 },
-    { id: 'y1998', img: '/story/a3.webp', x: HOME.x, y: HOME.y, w: 50, zoomable: true,
+    // 年画叠在最底层的 1978：揭到底才露出右边的缝
+    { id: 'y1978', img: '/story/a3-1978.webp', slot: 0, zoomable: true, locked: true,
+      ports: peeled >= 2 ? [{ side: 'r', at: 55, key: 'walk' }] : [] },
+    { id: 'y1988', img: '/act4/workshop.webp', slot: 0, zoomable: true,
+      hide: peeled >= 2, locked: peeled < 1 },
+    { id: 'y1998', img: '/story/a3.webp', slot: 0, zoomable: true,
       hide: peeled >= 1 },
-    // 揭下来的旧年份：落成桌上的小小记忆画，发暗，可再入画翻看
+    // 揭下来的旧年份：落成空框里的记忆小画，发暗，可再入画
     ...(peeled >= 1
-      ? [{ id: 'm1998', img: '/story/a3.webp', x: 74, y: 25, w: 22, zoomable: true } as GPanel]
-      : []),
+      ? [{ id: 'm1998', img: '/story/a3.webp', slot: 2, zoomable: true } as GPanel] : []),
     ...(peeled >= 2
-      ? [{ id: 'm1988', img: '/act4/workshop.webp', x: 74, y: 2, w: 22, zoomable: true } as GPanel]
-      : []),
-    { id: 'gate', img: '/story/a3-gate.webp', x: 70, y: 50, w: 28, zoomable: true },
+      ? [{ id: 'm1988', img: '/act4/workshop.webp', slot: 3, zoomable: true } as GPanel] : []),
+    // 厂门从一开始就挂在右上角，锁着
+    { id: 'gate', img: '/story/a3-gate.webp', slot: 1, zoomable: true,
+      ports: [{ side: 'l', at: 55, key: 'walk' }] },
   ]
 
   const peelLayer = () => {
@@ -107,23 +112,28 @@ export default function Ch3Goro({ onDone }: { onDone: () => void }) {
       setPeeled(1); playOnce('/story/sfx-peel.mp3', 0.7)
     } else if (peeled === 1) {
       setPeeled(2); playOnce('/story/sfx-peel.mp3', 0.7)
-      // 他的名字亮了；他从红榜里走出来，自己走到厂门前
-      later(() => setWalker({ panel: 'y1978', rx: 50, ry: 80, facing: 1 }), 1400)
-      later(() => setWalker({ panel: 'gate', rx: 50, ry: 80, facing: 1 }), 2400)
-      later(() => setPhase('gate'), 3400)
     }
   }
 
-  const onDrop = (id: string, x: number, y: number) => {
-    const far = Math.hypot(x - HOME.x, y - HOME.y) > 18
-    if ((id === 'y1998' && peeled === 0 && far) || (id === 'y1988' && peeled === 1 && far)) {
-      peelLayer()
-    }
+  // 把最上面那层拖去别的框 = 揭开这一年
+  const onSlotChange = (id: string, _to: number) => {
+    if (id === 'y1998' && peeled === 0) peelLayer()
+    if (id === 'y1988' && peeled === 1) peelLayer()
+  }
+
+  // 红榜与厂门对上：他走出红榜，自己走到厂门前
+  const onFuse = (a: string, b: string, key: string) => {
+    if (key !== 'walk') return
+    setFused((f) => [...f, [a, b]])
+    playOnce('/story/sfx-chime.mp3', 0.5, 0.9)
+    later(() => setWalker({ panel: 'y1978', rx: 50, ry: 80, facing: 1 }), 600)
+    later(() => setWalker({ panel: 'gate', rx: 50, ry: 80, facing: 1 }), 1800)
+    later(() => setPhase('gate'), 3000)
   }
 
   const onTap = (id: string, rx: number, ry: number, zoomed: boolean) => {
     if (!zoomed) return
-    // 点一下卷角 = 揭开这一层
+    // 点卷角 = 揭开这一层
     if (id === 'y1998' && peeled === 0 && rx > 58 && ry > 70) { peelLayer(); return }
     if (id === 'y1988' && peeled === 1 && rx > 58 && ry > 70) { peelLayer(); return }
     if (id === 'gate' && phase === 'gate' && rx > 42 && rx < 60 && ry > 52 && ry < 74) {
@@ -145,18 +155,12 @@ export default function Ch3Goro({ onDone }: { onDone: () => void }) {
     }
   }
 
-  // 光停在哪，下一步就在哪
-  const lightAt =
+  // 第一动立刻给圆圈；其余静置后才出现
+  const ringsNow: GRing[] =
+    phase === 'peel' && peeled === 0 ? [{ panel: 'y1998', rx: 68, ry: 80 }] : []
+  const rings: GRing[] =
     phase === 'peel'
-      ? (peeled === 0 ? { panel: 'y1998', rx: 68, ry: 82 } : peeled === 1 ? { panel: 'y1988', rx: 68, ry: 82 } : { panel: 'y1978', rx: 50, ry: 28 })
-    : phase === 'gate' ? { panel: 'gate', rx: 50, ry: 62 }
-    : phase === 'card' || phase === 'flip' ? { panel: 'gate', rx: 71, ry: 76 }
-    : { panel: 'gate', rx: 73, ry: 84 }
-
-  // 圆圈提示：现在该点哪里
-  const rings: { panel: string; rx: number; ry: number }[] =
-    phase === 'peel'
-      ? (peeled === 0 ? [{ panel: 'y1998', rx: 68, ry: 80 }] : peeled === 1 ? [{ panel: 'y1988', rx: 68, ry: 80 }] : [])
+      ? (peeled === 1 ? [{ panel: 'y1988', rx: 68, ry: 80 }] : peeled >= 2 && !walkOn ? [{ panel: 'gate', rx: 6, ry: 55 }] : [])
     : phase === 'gate' ? [{ panel: 'gate', rx: 51, ry: 63 }]
     : phase === 'card' ? [{ panel: 'gate', rx: 71, ry: 76 }]
     : []
@@ -179,12 +183,14 @@ export default function Ch3Goro({ onDone }: { onDone: () => void }) {
     if (id === 'gate' && zoomed) {
       return (
         <>
-          {phase === 'gate' && (
+          {phase !== 'unlocked' && phase !== 'card' && phase !== 'flip' && phase !== 'collect' && phase !== 'done' && (
             <div style={{ position: 'absolute', left: '47%', top: '56%', width: 30, height: 38, zIndex: 5,
               borderRadius: '5px 5px 7px 7px',
               background: 'linear-gradient(160deg, #c8a44e, #7a5e22)',
               boxShadow: '0 6px 14px rgba(0,0,0,0.75), 0 0 18px rgba(255,210,120,0.4)',
-              animation: 'port-breathe 2.6s ease-in-out infinite', pointerEvents: 'none' }} />
+              animation: phase === 'gate' ? 'port-breathe 2.6s ease-in-out infinite' : undefined,
+              opacity: phase === 'gate' ? 1 : 0.45,
+              pointerEvents: 'none' }} />
           )}
           {(phase === 'unlocked' || phase === 'card' || phase === 'flip' || phase === 'collect' || phase === 'done') && (
             <div style={{ position: 'absolute', inset: 0, background: 'rgba(120,126,132,0.35)',
@@ -217,27 +223,20 @@ export default function Ch3Goro({ onDone }: { onDone: () => void }) {
     return null
   }
 
-  const idleGlow = phase === 'peel'
-    ? [peeled === 0 ? 'y1998' : 'y1988']
-    : ['gate']
-
   return (
     <>
-      <PanelField
+      <GridField
         panels={panels}
-        fused={[]}
-        onFuse={() => {}}
-        onDrop={onDrop}
+        fused={fused}
+        onFuse={onFuse}
+        onSlotChange={onSlotChange}
         onTap={onTap}
         renderOverlay={overlay}
-        idleGlowIds={idleGlow}
         walker={walker}
         rings={rings}
+        ringsNow={ringsNow}
         bg="/story/a3.webp"
         intro={{ img: '/story/a3.webp' }}
-        lightAt={lightAt}
-        lightColor={LIGHTS[3].core}
-        lightGlow={LIGHTS[3].glow}
       />
       {phase === 'done' && (
         <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 60 }}>

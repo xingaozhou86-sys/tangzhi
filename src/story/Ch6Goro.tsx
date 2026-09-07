@@ -1,24 +1,25 @@
 import { useState } from 'react'
-import { PanelField } from './goro'
-import type { GPanel } from './goro'
-import { LIGHTS, useLoop, useTimers, playOnce, dbgPh } from './ui'
+import { GridField } from './grid'
+import type { GPanel, GRing } from './grid'
+import { useLoop, useTimers, playOnce, dbgPh } from './ui'
 import { CollectCard, PaperBit } from './bits'
 
 // ------------------------------------------------------------
-// 第六章 · 分糖（1970）—— 动词：撕（画内滑动）
-// 供销社那幅画里：糖罐盖上有圆圈在呼吸——往上掀（或点一下）→
+// 第六章 · 分糖（1970）—— 格子墙 · 画内手势
+// 墙上两幅画：供销社，和旁边的村子——安安静静亮着。
+// 入画供销社：糖罐盖上有圆圈在呼吸——往上掀（或点一下）→
 // 点一颗糖 → 往右拧开糖纸 → 沿折痕撕开（不齐，一大一小）→
 // 把其中一半推给她。剩下的半张，他留了五十五年。
-// 全部动作都发生在画里；村子那幅画只在旁边安静地亮着。
+// 你推出去那一刻，村子那幅画的窗，悄悄亮了。
 // ------------------------------------------------------------
 
 type Ch6Phase = 'store' | 'open' | 'take' | 'unwrap' | 'tear' | 'give' | 'keep' | 'done'
 
-const TEAR_AT = 58 // 折痕在 58%：左大右小
+const TEAR_AT = 58
 
 const PANELS: GPanel[] = [
-  { id: 'store', img: '/story/a6-store.webp', x: 5, y: 8, w: 52, zoomable: true },
-  { id: 'village', img: '/story/a6.webp', x: 63, y: 54, w: 34, zoomable: true },
+  { id: 'store', img: '/story/a6-store.webp', slot: 0, zoomable: true },
+  { id: 'village', img: '/story/a6.webp', slot: 1, zoomable: true },
 ]
 
 export default function Ch6Goro({ onDone }: { onDone: () => void }) {
@@ -29,13 +30,11 @@ export default function Ch6Goro({ onDone }: { onDone: () => void }) {
   const later = useTimers()
 
   useLoop('/story/cicadas.mp3', 0.22)
-  // 糖罐揭开起：八音盒主题（全游戏最完整的音乐）
   useLoop(phase !== 'store' ? '/story/theme-mb.wav' : null, 0.19)
 
   const onTap = (id: string, rx: number, ry: number, zoomed: boolean) => {
     if (!zoomed || id !== 'store') return
     if (phase === 'store' && rx > 38 && rx < 72 && ry > 30 && ry < 60) {
-      // 点一下罐盖 = 掀开
       setPhase('open')
       playOnce('/story/sfx-chime.mp3', 0.4, 1.5)
       return
@@ -57,25 +56,21 @@ export default function Ch6Goro({ onDone }: { onDone: () => void }) {
   const onSwipe = (id: string, dx: number, dy: number, rx0: number, ry0: number) => {
     if (id !== 'store') return
     if (phase === 'store' && dy < -6 && rx0 > 38 && rx0 < 72 && ry0 > 30 && ry0 < 60) {
-      // 往上掀：罐盖开了
       setPhase('open')
       playOnce('/story/sfx-chime.mp3', 0.4, 1.5)
       return
     }
     if (phase === 'take' && dx > 6) {
-      // 往右拧：糖纸开了
       setPhase('unwrap')
       later(() => setPhase('tear'), 1100)
       return
     }
     if (phase === 'tear' && dx > 6 && rx0 > 52) {
-      // 从折痕右边往右撕
       playOnce('/story/sfx-tear.mp3', 0.8)
       setPhase('give')
       return
     }
     if (phase === 'give' && dx > 6) {
-      // 把哪一半推给她？起点在哪半，推的就是哪半
       const which: 'big' | 'small' = rx0 < TEAR_AT * 0.9 + 4 ? 'big' : 'small'
       setGiven(which)
       try { localStorage.setItem('zzc.gaveBig', which === 'big' ? '1' : '0') } catch { /* 无痕 */ }
@@ -83,19 +78,10 @@ export default function Ch6Goro({ onDone }: { onDone: () => void }) {
     }
   }
 
-  // 光停在哪，下一步就在哪（黏在供销社画里的位置上）
-  const lightAt =
-    phase === 'store' ? { panel: 'store', rx: 55, ry: 45 }
-    : phase === 'open' ? { panel: 'store', rx: 55, ry: 55 }
-    : phase === 'take' || phase === 'unwrap' ? { panel: 'store', rx: 50, ry: 50 }
-    : phase === 'tear' ? { panel: 'store', rx: 52, ry: 50 }
-    : phase === 'give' ? { panel: 'store', rx: 76, ry: 68 }
-    : { panel: 'store', rx: 43, ry: 50 }
-
-  // 圆圈提示：现在该碰哪里
-  const rings: { panel: string; rx: number; ry: number }[] =
-    phase === 'store' ? [{ panel: 'store', rx: 55, ry: 44 }]
-    : phase === 'open' ? [{ panel: 'store', rx: 53, ry: 52 }]
+  // 第一动立刻给圆圈；其余静置后才出现
+  const ringsNow: GRing[] = phase === 'store' ? [{ panel: 'store', rx: 55, ry: 44 }] : []
+  const rings: GRing[] =
+    phase === 'open' ? [{ panel: 'store', rx: 53, ry: 52 }]
     : phase === 'take' ? [{ panel: 'store', rx: 50, ry: 48 }]
     : phase === 'tear' ? [{ panel: 'store', rx: 58, ry: 50 }]
     : phase === 'give' ? [{ panel: 'store', rx: 45, ry: 50 }]
@@ -125,7 +111,6 @@ export default function Ch6Goro({ onDone }: { onDone: () => void }) {
     }
     if (id !== 'store') return null
     if (!zoomed) {
-      // 糖罐常驻流光：这幅小画上有一处一直在悄悄发亮
       if (phase !== 'store') return null
       return (
         <div style={{ position: 'absolute', left: '44%', top: '34%', width: '22%', height: '26%',
@@ -149,7 +134,6 @@ export default function Ch6Goro({ onDone }: { onDone: () => void }) {
             transition: 'all 0.9s ease', pointerEvents: 'none',
           }} />
         )}
-        {/* 罐口糖光 */}
         {phase === 'open' && (
           <div style={{ position: 'absolute', left: '46%', top: '46%', width: '18%', height: '18%',
             zIndex: 15, pointerEvents: 'none', animation: 'propIn 1.2s ease',
@@ -204,7 +188,6 @@ export default function Ch6Goro({ onDone }: { onDone: () => void }) {
                 pointerEvents: 'none',
               }} />
             )}
-            {/* 折痕 */}
             {phase === 'tear' && (
               <div style={{ position: 'absolute', left: `${35 + TEAR_AT * 0.26}%`, top: '42%',
                 width: 0, height: '16%', zIndex: 17, pointerEvents: 'none',
@@ -233,24 +216,19 @@ export default function Ch6Goro({ onDone }: { onDone: () => void }) {
     )
   }
 
-  const idleGlow = ['store']
-
   return (
     <>
-      <PanelField
+      <GridField
         panels={PANELS}
         fused={[]}
         onFuse={() => {}}
         onTap={onTap}
         onSwipe={onSwipe}
         renderOverlay={overlay}
-        idleGlowIds={idleGlow}
         rings={rings}
+        ringsNow={ringsNow}
         bg="/story/a6.webp"
         intro={{ img: '/story/a6-store.webp' }}
-        lightAt={lightAt}
-        lightColor={LIGHTS[6].core}
-        lightGlow={LIGHTS[6].glow}
       />
       {phase === 'done' && (
         <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 60 }}>
