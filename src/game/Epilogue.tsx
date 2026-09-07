@@ -8,9 +8,13 @@ import { useEffect, useState } from 'react'
 const REWIND = [
   '/story/a6.webp',
   '/story/a5-roof.webp',
+  '/story/b8-room.webp',
   '/act4/workshop.webp',
+  '/story/b6-platform.webp',
   '/story/a3-1978.webp',
+  '/story/b4-rain.webp',
   '/story/a2-room.webp',
+  '/story/b2-lathe.webp',
   '/story/a1.webp',
 ]
 

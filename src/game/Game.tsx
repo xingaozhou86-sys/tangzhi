@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Board } from '../world/engine'
-import { CH1, CH2, CH3, CH5, CH6 } from './chapters'
+import { CH1, CH2, CH3, CH5, CH6, CHX1, CHX2, CHX3, CHX4 } from './chapters'
 import { ActFour } from './ActFour'
 import { Epilogue } from './Epilogue'
 import './game.css'
@@ -15,15 +15,19 @@ type Stage =
 
 const STAGES: Stage[] = [
   { kind: 'chapter', def: CH1 },
+  { kind: 'chapter', def: CHX1 },
   { kind: 'chapter', def: CH2 },
+  { kind: 'chapter', def: CHX2 },
   { kind: 'chapter', def: CH3 },
+  { kind: 'chapter', def: CHX3 },
   { kind: 'act4' },
+  { kind: 'chapter', def: CHX4 },
   { kind: 'chapter', def: CH5 },
   { kind: 'chapter', def: CH6 },
   { kind: 'epilogue' },
 ]
 
-const ACT4_CARD = { no: '肆', name: '签字', poem: '五个字，他签了一生。' }
+const ACT4_CARD = { no: '柒', name: '签字', poem: '五个字，他签了一生。' }
 const EP_CARD = { no: '终', name: '回程', poem: '往回走，走回糖纸发光的地方。' }
 
 function cardOf(s: Stage) {
