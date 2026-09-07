@@ -305,3 +305,66 @@
   cursor: pointer;
   z-index: 2;
 }
+
+/* ---------- 手感：共振 / 接通 / 入画 / 呼吸 ---------- */
+
+/* 拖拽共振：两缝之间拉起的光须 */
+.beams line.res {
+  stroke: rgba(255, 234, 180, 0.85);
+  stroke-width: 0.35;
+  stroke-dasharray: 1.6 1.2;
+  filter: drop-shadow(0 0 1.8px rgba(255, 216, 140, 0.95));
+  animation: res-flow 0.9s linear infinite;
+}
+@keyframes res-flow {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: -2.8; }
+}
+
+/* 共振中的两幅画：边框暖亮 */
+.pnl.resonant {
+  box-shadow:
+    0 0 0 5px #3a2a16,
+    0 0 0 6px rgba(255, 230, 170, 0.4),
+    0 0 34px rgba(255, 206, 120, 0.5),
+    0 22px 44px rgba(0, 0, 0, 0.6);
+}
+
+/* 连上瞬间：双框一齐爆亮一下 */
+.pnl.joined {
+  animation: joined-pulse 1.7s ease-out;
+}
+@keyframes joined-pulse {
+  0% {
+    box-shadow:
+      0 0 0 5px #241a10,
+      0 0 0 6px rgba(255, 236, 190, 0.9),
+      0 0 70px rgba(255, 216, 140, 0.85),
+      0 22px 44px rgba(0, 0, 0, 0.6);
+  }
+  100% {
+    box-shadow:
+      0 0 0 5px #241a10,
+      0 0 0 6px rgba(255, 228, 170, 0.07),
+      0 22px 44px rgba(0, 0, 0, 0.6);
+  }
+}
+
+/* 入画：从那幅画里长出来 */
+.zoom-frame {
+  animation: zoom-pop 0.5s cubic-bezier(0.2, 0.9, 0.26, 1.15);
+}
+@keyframes zoom-pop {
+  from { transform: scale(0.55) translateY(3%); opacity: 0.4; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+/* 画是活的：极缓的呼吸微动 */
+.pnl-art {
+  animation: art-drift 26s ease-in-out infinite alternate;
+}
+.pnl.drag .pnl-art { animation: none; }
+@keyframes art-drift {
+  from { transform: scale(1.01) translate(0.4%, 0.3%); }
+  to { transform: scale(1.05) translate(-0.5%, -0.4%); }
+}

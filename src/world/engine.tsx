@@ -60,6 +60,8 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
   const [beams, setBeams] = useState<Beam[]>([])
   const [walker, setWalker] = useState<{ x: number; y: number } | null>(null)
   const [drag, setDrag] = useState<{ id: string; x: number; y: number } | null>(null)
+  const [hoverCell, setHoverCell] = useState<Cell | null>(null)
+  const [joined, setJoined] = useState<string[]>([])
   const boardRef = useRef<HTMLDivElement>(null)
   const panelsRef = useRef<PanelState[]>(panels)
   const doneRef = useRef<Set<string>>(new Set())
@@ -102,6 +104,8 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
         const id = ++beamSeq.current
         setBeams(bs => [...bs, { id, x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y }])
         window.setTimeout(() => setBeams(bs => bs.filter(x => x.id !== id)), 1700)
+        setJoined([a.id, b.id])
+        window.setTimeout(() => setJoined([]), 1700)
         if (fx.walk) {
           delay = 1200
           setWalker({ x: p1.x, y: p1.y })
@@ -185,6 +189,7 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
       return
     }
     setPanels(prev => prev.map(q => q.id === cur.id ? { ...q, cell: target } : q))
+    play('/story/sfx-chime.mp3', 0.12)
     poke()
   }
 
@@ -205,12 +210,14 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
           x: Math.max(-4, Math.min(100 - CW + 4, px - CW / 2)),
           y: Math.max(-4, Math.min(100 - CW + 4, py - CW / 2)),
         })
+        setHoverCell(cellAt(px, py))
       }
     }
     const up = (ev: PointerEvent) => {
       window.removeEventListener('pointermove', move)
       window.removeEventListener('pointerup', up)
       setDrag(null)
+      setHoverCell(null)
       if (!moved) {
         const d = defOf(p.id)
         if (d?.spots?.length) { setZoom(p.id); poke() }
@@ -247,6 +254,43 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
   const zoomDef = zoom ? defOf(zoom) : undefined
   const zoomPanel = zoom ? panels.find(p => p.id === zoom) : undefined
 
+  // 拖拽共振：拖着的画靠近能接的缝时，两缝之间拉起一根光须
+  const resonance = (() => {
+    if (!drag || hoverCell == null) return null
+    const p = panels.find(q => q.id === drag.id)
+    if (!p) return null
+    if (panels.some(q => q.id !== p.id && q.cell === hoverCell)) return null
+    for (const s of avail) {
+      if (s.cond.kind !== 'connect') continue
+      const c = s.cond
+      if (c.a === p.id) {
+        const b = panels.find(q => q.id === c.b)
+        if (b && neighbor(hoverCell, c.aside) === b.cell) {
+          const ka = p.layers[0].edges?.[c.aside]
+          const kb = b.layers[0].edges?.[OPP[c.aside]]
+          if (ka && ka === kb) {
+            const m1 = edgeMid(hoverCell, c.aside)
+            const m2 = edgeMid(b.cell, OPP[c.aside])
+            return { x1: m1.x, y1: m1.y, x2: m2.x, y2: m2.y, other: b.id }
+          }
+        }
+      }
+      if (c.b === p.id) {
+        const a = panels.find(q => q.id === c.a)
+        if (a && neighbor(a.cell, c.aside) === hoverCell) {
+          const ka = a.layers[0].edges?.[c.aside]
+          const kb = p.layers[0].edges?.[OPP[c.aside]]
+          if (ka && ka === kb) {
+            const m1 = edgeMid(a.cell, c.aside)
+            const m2 = edgeMid(hoverCell, OPP[c.aside])
+            return { x1: m1.x, y1: m1.y, x2: m2.x, y2: m2.y, other: a.id }
+          }
+        }
+      }
+    }
+    return null
+  })()
+
   return (
     <div className="board-wrap">
       <div className="board" ref={boardRef}>
@@ -267,7 +311,7 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
           return (
             <div
               key={p.id}
-              className={`pnl ${p.lit ? 'lit' : ''} ${p.dim ? 'dim' : ''} ${p.born ? 'born' : ''} ${dragging ? 'drag' : ''} ${zoom === p.id ? 'gone' : ''}`}
+              className={`pnl ${p.lit ? 'lit' : ''} ${p.dim ? 'dim' : ''} ${p.born ? 'born' : ''} ${dragging ? 'drag' : ''} ${zoom === p.id ? 'gone' : ''} ${joined.includes(p.id) ? 'joined' : ''} ${resonance && (resonance.other === p.id || drag?.id === p.id) ? 'resonant' : ''}`}
               style={style}
               onPointerDown={e => onPanelDown(e, p)}
             >
@@ -290,6 +334,9 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
           {beams.map(b => (
             <line key={b.id} x1={b.x1} y1={b.y1} x2={b.x2} y2={b.y2} />
           ))}
+          {resonance && (
+            <line className="res" x1={resonance.x1} y1={resonance.y1} x2={resonance.x2} y2={resonance.y2} />
+          )}
         </svg>
 
         {walker && <div className="walker" style={{ left: `${walker.x}%`, top: `${walker.y}%` }} />}
