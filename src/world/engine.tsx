@@ -59,6 +59,9 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
   const [zoom, setZoom] = useState<string | null>(null)
   const [beams, setBeams] = useState<Beam[]>([])
   const [walker, setWalker] = useState<{ x: number; y: number; fast?: boolean } | null>(null)
+  const [hero, setHero] = useState(def.hero ?? null)
+  const heroRef = useRef(hero)
+  heroRef.current = hero
   const [through, setThrough] = useState<string | null>(def.panels[0]?.img ?? null)
 
   // 开场穿画入场
@@ -122,9 +125,21 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
         window.setTimeout(() => setJoined([]), 1700)
         if (fx.walk) {
           delay = 1200
-          setWalker({ x: p1.x, y: p1.y })
-          requestAnimationFrame(() => requestAnimationFrame(() => setWalker({ x: p2.x, y: p2.y })))
-          window.setTimeout(() => setWalker(null), 2100)
+          const h = heroRef.current
+          if (h && h.panel === a.id) {
+            // 他从这幅画走进那幅画
+            const nx = cond.aside === 'r' ? 14 : cond.aside === 'l' ? 86 : 50
+            const ny = cond.aside === 'b' ? 14 : cond.aside === 't' ? 86 : 62
+            window.setTimeout(() => setHero({ panel: b.id, x: nx, y: ny }), 250)
+          } else if (h && h.panel === b.id) {
+            const nx = cond.aside === 'r' ? 86 : cond.aside === 'l' ? 14 : 50
+            const ny = cond.aside === 'b' ? 86 : cond.aside === 't' ? 14 : 62
+            window.setTimeout(() => setHero({ panel: a.id, x: nx, y: ny }), 250)
+          } else {
+            setWalker({ x: p1.x, y: p1.y })
+            requestAnimationFrame(() => requestAnimationFrame(() => setWalker({ x: p2.x, y: p2.y })))
+            window.setTimeout(() => setWalker(null), 2100)
+          }
         }
       }
     }
@@ -285,7 +300,11 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
   const clickSpot = (panelId: string, spotId: string) => {
     const s = availNow().find(st => st.cond.kind === 'spot' && st.cond.panel === panelId && st.cond.spot === spotId)
     if (!s) return
-    fire(s)
+    // 他先走过去看，再发生
+    const d = defOf(panelId)
+    const sp = d?.spots?.find(x => x.id === spotId)
+    if (sp) setHero({ panel: panelId, x: sp.x + sp.w / 2, y: sp.y + sp.h / 2 + 8 })
+    window.setTimeout(() => fire(s), 620)
     if (!s.fx.keepZoom) setZoom(null)
   }
 
@@ -409,9 +428,22 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
               {hint && avail.some(s => s.cond.kind === 'overlay' && (s.cond.a === p.id || s.cond.b === p.id)) && (
                 <i className="ring" style={{ left: '50%', top: '50%' }} />
               )}
+              {def.goal === p.id && <i className="beacon" />}
             </div>
           )
         })}
+
+        {hero && (() => {
+          const hp = panels.find(p => p.id === hero.panel)
+          if (!hp || zoom === hero.panel) return null
+          const r = cellRect(hp.cell)
+          return (
+            <div
+              className="hero"
+              style={{ left: `${r.x + r.w * hero.x / 100}%`, top: `${r.y + r.h * hero.y / 100}%` }}
+            />
+          )
+        })()}
 
         <svg className="beams" viewBox="0 0 100 100" preserveAspectRatio="none">
           {beams.map(b => (
@@ -444,6 +476,9 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
             <div className="zoom-frame" onPointerDown={e => e.stopPropagation()}>
               <img src={zoomPanel.layers[0].img} draggable={false} alt="" />
               {zoomPanel.layers[0].year && <div className="pnl-year in-zoom">{zoomPanel.layers[0].year}</div>}
+              {hero && zoom === hero.panel && (
+                <div className="hero in" style={{ left: `${hero.x}%`, top: `${hero.y}%` }} />
+              )}
               {(zoomDef.spots ?? []).map(sp => {
                 const active = spotStepsFor(zoom).some(s => (s.cond as { spot: string }).spot === sp.id)
                 return (

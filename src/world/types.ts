@@ -64,6 +64,8 @@ export interface ChapterDef {
   poem: string
   where?: string
   ambient?: string
+  hero?: { panel: string; x: number; y: number }
+  goal?: string
   panels: PanelDef[]
   steps: Step[]
 }

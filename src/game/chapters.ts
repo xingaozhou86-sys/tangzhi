@@ -7,6 +7,8 @@ import type { ChapterDef } from '../world/types'
 export const CH1: ChapterDef = {
   id: 'ch1', no: '壹', name: '报名', poem: '那一夜，他第一个写下名字。', where: '一九五七 · 夜校报名处',
   ambient: '/story/amb-city.mp3',
+  hero: { panel: 'booth', x: 68, y: 66 },
+  goal: 'hall',
   panels: [
     {
       id: 'booth', img: '/story/a1.webp', cell: 0,
@@ -37,6 +39,8 @@ export const CH1: ChapterDef = {
 export const CH2: ChapterDef = {
   id: 'ch2', no: '叁', name: '门与窗', poem: '门通街巷，窗通远方。', where: '一九六〇 · 职工宿舍',
   ambient: '/story/amb-city.mp3',
+  hero: { panel: 'room', x: 46, y: 72 },
+  goal: 'rest',
   panels: [
     {
       id: 'room', img: '/story/a2-room.webp', cell: 0,
@@ -70,6 +74,8 @@ export const CH2: ChapterDef = {
 export const CH3: ChapterDef = {
   id: 'ch3', no: '伍', name: '年画', poem: '一年撕去一层，撕到一九七八。', where: '一九六六至七八 · 厂门口',
   ambient: '/story/amb-wind.mp3',
+  hero: { panel: 'nianhua', x: 62, y: 78 },
+  goal: 'gate',
   panels: [
     {
       id: 'nianhua', img: '/story/a3.webp', cell: 0,
@@ -96,6 +102,8 @@ export const CH3: ChapterDef = {
 export const CH5: ChapterDef = {
   id: 'ch5', no: '玖', name: '天台', poem: '收音机响的时候，她还靠在他肩上。', where: '一九八三 · 楼顶天台',
   ambient: '/story/amb-hum.mp3',
+  hero: { panel: 'roof', x: 40, y: 78 },
+  goal: 'post',
   panels: [
     {
       id: 'roof', img: '/story/a5.webp', cell: 0,
@@ -123,6 +131,8 @@ export const CH5: ChapterDef = {
 export const CH6: ChapterDef = {
   id: 'ch6', no: '拾', name: '水果糖', poem: '最甜的那颗，他始终没舍得吃。', where: '一九八六 · 供销社',
   ambient: '/story/cicadas.mp3',
+  hero: { panel: 'store', x: 24, y: 72 },
+  goal: 'village',
   panels: [
     {
       id: 'store', img: '/story/a6-store.webp', cell: 0,
@@ -154,6 +164,8 @@ export const CH6: ChapterDef = {
 export const CHX1: ChapterDef = {
   id: 'chx1', no: '贰', name: '学徒', poem: '师傅的手搭在他手上，铁就听话了。', where: '一九五八 · 机修车间',
   ambient: '/sfx/factory.wav',
+  hero: { panel: 'lathe', x: 28, y: 74 },
+  goal: 'shop',
   panels: [
     {
       id: 'lathe', img: '/story/b2-lathe.webp', cell: 0,
@@ -182,6 +194,8 @@ export const CHX1: ChapterDef = {
 export const CHX2: ChapterDef = {
   id: 'chx2', no: '肆', name: '雨夜', poem: '一把伞，两个人，雨就小了。', where: '一九六一 · 书店檐下',
   ambient: '/sfx/rain.wav',
+  hero: { panel: 'rain', x: 50, y: 78 },
+  goal: 'book',
   panels: [
     {
       id: 'rain', img: '/story/b4-rain.webp', cell: 0,
@@ -210,6 +224,8 @@ export const CHX2: ChapterDef = {
 export const CHX3: ChapterDef = {
   id: 'chx3', no: '陆', name: '站台', poem: '红围巾挥了三下，车就开了。', where: '一九七八 · 火车站台',
   ambient: '/sfx/train.wav',
+  hero: { panel: 'platform', x: 36, y: 74 },
+  goal: 'train',
   panels: [
     {
       id: 'platform', img: '/story/b6-platform.webp', cell: 0,
@@ -232,6 +248,8 @@ export const CHX3: ChapterDef = {
 export const CHX4: ChapterDef = {
   id: 'chx4', no: '捌', name: '婚礼', poem: '两根红烛，就算成了家。', where: '一九八〇 · 新房',
   ambient: '/sfx/murmur.wav',
+  hero: { panel: 'wedding', x: 50, y: 80 },
+  goal: 'newroom',
   panels: [
     {
       id: 'wedding', img: '/story/b8-wedding.webp', cell: 0,
