@@ -153,26 +153,26 @@ export const CH6: ChapterDef = {
 
 export const CHX1: ChapterDef = {
   id: 'chx1', no: '贰', name: '学徒', poem: '师傅的手搭在他手上，铁就听话了。',
-  ambient: '/story/amb-city.mp3',
+  ambient: '/sfx/factory.wav',
   panels: [
     {
       id: 'lathe', img: '/story/b2-lathe.webp', cell: 0,
-      edges: { r: 'tu' },
+      edges: { b: 'chang' },
       spots: [{ id: 'paper', x: 56, y: 58, w: 24, h: 22 }],
     },
   ],
   steps: [
     { id: 's-paper', cond: { kind: 'spot', panel: 'lathe', spot: 'paper' },
       fx: { sfx: '/story/sfx-peel.mp3', spawn: {
-        def: { id: 'desk', img: '/story/b2-desk.webp', cell: 3, edges: { l: 'tu', b: 'chang' }, spots: [{ id: 'gear', x: 36, y: 32, w: 28, h: 28 }] },
-        cells: [3, 2, 1] } } },
-    { id: 'c-tu', cond: { kind: 'connect', a: 'lathe', aside: 'r', b: 'desk' }, after: ['s-paper'],
-      fx: { walk: true, sfx: '/story/sfx-chime.mp3' } },
-    { id: 's-gear', cond: { kind: 'spot', panel: 'desk', spot: 'gear' }, after: ['c-tu'],
+        def: { id: 'desk', img: '/story/b2-desk.webp', cell: 1, spots: [{ id: 'gear', x: 36, y: 32, w: 28, h: 28 }] },
+        cells: [1, 3, 2] } } },
+    { id: 's-overlay', cond: { kind: 'overlay', a: 'desk', b: 'lathe' }, after: ['s-paper'],
+      fx: { glow: 'lathe', sfx: '/story/sfx-chime.mp3' } },
+    { id: 's-part', cond: { kind: 'spot', panel: 'lathe', spot: 'paper' }, after: ['s-overlay'],
       fx: { sfx: '/story/sfx-peel.mp3', spawn: {
         def: { id: 'shop', img: '/act4/workshop.webp', cell: 2, edges: { t: 'chang' } },
         cells: [2, 3, 1] } } },
-    { id: 'c-shop', cond: { kind: 'connect', a: 'desk', aside: 'b', b: 'shop' }, after: ['s-gear'],
+    { id: 'c-shop', cond: { kind: 'connect', a: 'lathe', aside: 'b', b: 'shop' }, after: ['s-part'],
       fx: { walk: true, sfx: '/story/sfx-chime.mp3' } },
     { id: 'end', cond: { kind: 'auto' }, after: ['c-shop'],
       fx: { glow: 'shop', done: true, sfx: '/story/sfx-chime.mp3' } },
@@ -181,7 +181,7 @@ export const CHX1: ChapterDef = {
 
 export const CHX2: ChapterDef = {
   id: 'chx2', no: '肆', name: '雨夜', poem: '一把伞，两个人，雨就小了。',
-  ambient: '/story/amb-wind.mp3',
+  ambient: '/sfx/rain.wav',
   panels: [
     {
       id: 'rain', img: '/story/b4-rain.webp', cell: 0,
@@ -209,7 +209,7 @@ export const CHX2: ChapterDef = {
 
 export const CHX3: ChapterDef = {
   id: 'chx3', no: '陆', name: '站台', poem: '红围巾挥了三下，车就开了。',
-  ambient: '/story/amb-wind.mp3',
+  ambient: '/sfx/train.wav',
   panels: [
     {
       id: 'platform', img: '/story/b6-platform.webp', cell: 0,
@@ -231,7 +231,7 @@ export const CHX3: ChapterDef = {
 
 export const CHX4: ChapterDef = {
   id: 'chx4', no: '捌', name: '婚礼', poem: '两根红烛，就算成了家。',
-  ambient: '/story/amb-hum.mp3',
+  ambient: '/sfx/murmur.wav',
   panels: [
     {
       id: 'wedding', img: '/story/b8-wedding.webp', cell: 0,
@@ -247,6 +247,6 @@ export const CHX4: ChapterDef = {
     { id: 'c-fang', cond: { kind: 'connect', a: 'wedding', aside: 'b', b: 'newroom' }, after: ['s-door'],
       fx: { walk: true, sfx: '/story/sfx-chime.mp3' } },
     { id: 's-candle', cond: { kind: 'spot', panel: 'newroom', spot: 'candle' }, after: ['c-fang'],
-      fx: { glow: 'newroom', done: true, sfx: '/story/sfx-chime.mp3' } },
+      fx: { glow: 'newroom', done: true, music: '/sfx/fire.wav' } },
   ],
 }

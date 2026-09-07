@@ -38,7 +38,9 @@ export function ActFour({ onDone }: { onDone: () => void }) {
     poke()
     const n = marks + 1
     setMarks(n)
-    thud(0.5)
+    const pen = new Audio('/sfx/pencil.wav')
+    pen.volume = 0.5
+    pen.play().catch(() => {})
     if (n >= 5) {
       setStamped(true)
       window.setTimeout(() => thud(0.9), 500)

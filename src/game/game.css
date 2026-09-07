@@ -325,3 +325,9 @@
   transition: background 0.4s ease, color 0.4s ease;
 }
 .ep-again:hover { background: rgba(240, 222, 185, 0.9); color: #221708; }
+
+/* 检讨书纸面用真纸纹 */
+.a4-paper {
+  background: url(/tex/paper.png) 0 0 / 90% repeat, linear-gradient(175deg, #efe3c8, #e2d2b0);
+  background-blend-mode: multiply;
+}

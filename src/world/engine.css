@@ -17,22 +17,19 @@
     /* 墙面主体的暖色过渡 */
     linear-gradient(168deg, #241a0e 0%, #1c1409 38%, #16100a 68%, #100b06 100%);
 }
-/* 纸纹：纤维 + 水渍 + 旧照片斑 */
+/* 纸纹：真实纤维纹理 + 水渍 + 旧照片斑 */
 .board-wrap::before {
   content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
   background:
-    /* 大块水渍 */
+    url(/tex/paper.png) 0 0 / 60vmin repeat,
     radial-gradient(34% 26% at 12% 82%, rgba(64, 44, 22, 0.5), transparent 70%),
     radial-gradient(28% 22% at 88% 14%, rgba(70, 50, 26, 0.42), transparent 70%),
-    radial-gradient(22% 30% at 84% 88%, rgba(46, 32, 16, 0.55), transparent 70%),
-    radial-gradient(18% 14% at 8% 10%, rgba(88, 64, 34, 0.35), transparent 70%),
-    /* 纸纤维 */
-    repeating-linear-gradient(97deg, rgba(255, 236, 200, 0.022) 0 1px, transparent 1px 4px),
-    repeating-linear-gradient(7deg, rgba(255, 236, 200, 0.016) 0 1px, transparent 1px 5px),
-    repeating-linear-gradient(43deg, rgba(0, 0, 0, 0.05) 0 2px, transparent 2px 7px);
+    radial-gradient(22% 30% at 84% 88%, rgba(46, 32, 16, 0.55), transparent 70%);
+  mix-blend-mode: overlay;
+  opacity: 0.85;
 }
 /* 胶片暗角 + 极淡的斜纹纸理 */
 .board-wrap::after {
@@ -367,4 +364,12 @@
 @keyframes art-drift {
   from { transform: scale(1.01) translate(0.4%, 0.3%); }
   to { transform: scale(1.05) translate(-0.5%, -0.4%); }
+}
+
+/* 悬停微抬：画是可以拿的 */
+.pnl:hover {
+  box-shadow:
+    0 0 0 5px #2c2114,
+    0 0 0 6px rgba(255, 232, 180, 0.16),
+    0 28px 54px rgba(0, 0, 0, 0.68);
 }

@@ -38,6 +38,7 @@ export type Cond =
   | { kind: 'spot'; panel: string; spot: string }
   | { kind: 'peel'; panel: string }
   | { kind: 'connect'; a: string; aside: Side; b: string }
+  | { kind: 'overlay'; a: string; b: string }
   | { kind: 'auto' }
 
 export interface Fx {

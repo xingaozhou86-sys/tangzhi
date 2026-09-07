@@ -95,6 +95,13 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
     if (fx.music) play(fx.music, 0.5)
     let delay = 0
     const cond = step.cond
+    if (cond.kind === 'overlay') {
+      const b = panelsRef.current.find(q => q.id === cond.b)
+      if (b) {
+        setJoined([b.id])
+        window.setTimeout(() => setJoined([]), 1700)
+      }
+    }
     if (cond.kind === 'connect') {
       const a = panelsRef.current.find(q => q.id === cond.a)
       const b = panelsRef.current.find(q => q.id === cond.b)
@@ -177,7 +184,15 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
     const target = cellAt(pt.x, pt.y)
     if (target == null || target === p.cell) return
     const cur = panelsRef.current.find(q => q.id === p.id) ?? p
-    if (panelsRef.current.some(q => q.id !== cur.id && q.cell === target)) return
+    const occupant = panelsRef.current.find(q => q.id !== cur.id && q.cell === target)
+    if (occupant) {
+      // 叠画：把拖着的画叠到目标画上，合成新画面
+      const ov = availNow().find(s => s.cond.kind === 'overlay' && s.cond.a === cur.id && s.cond.b === occupant.id)
+      if (!ov) return
+      setPanels(prev => prev.filter(q => q.id !== cur.id))
+      fire(ov)
+      return
+    }
     const peelStep = availNow().find(s => s.cond.kind === 'peel' && s.cond.panel === cur.id)
     if (peelStep && cur.layers.length > 1) {
       const top = cur.layers[0]
@@ -189,7 +204,7 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
       return
     }
     setPanels(prev => prev.map(q => q.id === cur.id ? { ...q, cell: target } : q))
-    play('/story/sfx-chime.mp3', 0.12)
+    play('/sfx/wooddrop.wav', 0.35)
     poke()
   }
 
@@ -326,6 +341,9 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
                 return <i key={s.id} className="ring" style={{ left: `${spot.x + spot.w / 2}%`, top: `${spot.y + spot.h / 2}%` }} />
               })}
               {hint && peelable(p.id) && p.layers.length > 1 && <i className="dogear" />}
+              {hint && avail.some(s => s.cond.kind === 'overlay' && s.cond.a === p.id) && (
+                <i className="ring" style={{ left: '50%', top: '50%' }} />
+              )}
             </div>
           )
         })}
