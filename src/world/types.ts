@@ -56,6 +56,7 @@ export type Cond =
   | { kind: 'peel'; panel: string }
   | { kind: 'connect'; a: string; aside: Side; b: string }
   | { kind: 'overlay'; a: string; b: string }
+  | { kind: 'arrange'; order: string[]; cells: Cell[] }
   | { kind: 'auto' }
 
 export interface Fx {
@@ -73,8 +74,11 @@ export interface Fx {
   music?: string
   /** 机关动画：齿轮咬合 / 火光迸亮 / 日出 */
   burst?: 'gear' | 'spark' | 'sun'
+  burstPanel?: string
   /** 时间跳转：大字年份在画上闪过 */
   yearFlash?: string
+  /** 他依次走过这几幅画 */
+  walkThrough?: string[]
   /** 连画时他走过去 */
   walk?: boolean
   collect?: boolean

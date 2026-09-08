@@ -81,6 +81,10 @@ for (const [name, def] of Object.entries(mod)) {
       else if (c.kind === 'spot' || c.kind === 'dive' || c.kind === 'back') ok = present.has(c.panel)
       else if (c.kind === 'peel') ok = present.has(c.panel) && layersLeft.get(c.panel).length > 1
       else if (c.kind === 'overlay') ok = present.has(c.a) && present.has(c.b)
+      else if (c.kind === 'arrange') {
+        ok = c.order.every(pid => present.has(pid))
+        if (!ok) c.order.forEach(pid => { if (!defs.has(pid)) err(def.id, `排序 ${s.id} 引用不存在的画 ${pid}`) })
+      }
       else if (c.kind === 'connect') {
         if (present.has(c.a) && present.has(c.b)) {
           const ka = curEdges(c.a)[c.aside]

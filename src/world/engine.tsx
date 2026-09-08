@@ -96,8 +96,8 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
     window.clearTimeout(idle1.current)
     window.clearTimeout(idle2.current)
     setHint(0)
-    idle1.current = window.setTimeout(() => setHint(h => Math.max(h, 1)), 8000)
-    idle2.current = window.setTimeout(() => setHint(2), 18000)
+    idle1.current = window.setTimeout(() => setHint(h => Math.max(h, 1)), 18000)
+    idle2.current = window.setTimeout(() => setHint(2), 40000)
   }
 
   const availNow = () =>
@@ -119,8 +119,8 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
 
   useEffect(() => {
     const t = window.setTimeout(() => setThrough(null), 1150)
-    idle1.current = window.setTimeout(() => setHint(1), 2000)
-    idle2.current = window.setTimeout(() => setHint(2), 16000)
+    idle1.current = window.setTimeout(() => setHint(1), 18000)
+    idle2.current = window.setTimeout(() => setHint(2), 40000)
     return () => { window.clearTimeout(t); window.clearTimeout(idle1.current); window.clearTimeout(idle2.current) }
   }, [def.id])
 
@@ -144,7 +144,7 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
     if (fx.sfx) play(fx.sfx, 0.5)
     if (fx.music) play(fx.music, 0.5)
     if (fx.burst || fx.yearFlash) {
-      const pid = (step.cond as { panel?: string }).panel ?? (step.cond as { b?: string }).b ?? def.panels[0].id
+      const pid = fx.burstPanel ?? (step.cond as { panel?: string }).panel ?? (step.cond as { b?: string }).b ?? def.panels[0].id
       const id = ++burstSeq.current
       setBursts(bs => [...bs, { id, panel: pid, kind: fx.burst ?? 'year', year: fx.yearFlash }])
       window.setTimeout(() => setBursts(bs => bs.filter(x => x.id !== id)), 2200)
@@ -152,6 +152,16 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
     let delay = 0
 
     const cond = step.cond
+    if (fx.walkThrough) {
+      const pts = fx.walkThrough
+        .map(id => panelsRef.current.find(q => q.id === id))
+        .filter((q): q is PanelState => !!q)
+      pts.forEach((pt, i) => {
+        const x = i === 0 ? 14 : i === pts.length - 1 ? 86 : 50
+        window.setTimeout(() => setHero({ panel: pt.id, x, y: 76 }), 250 + i * 950)
+      })
+      delay = Math.max(delay, 250 + pts.length * 950)
+    }
     if (cond.kind === 'overlay') {
       const b = panelsRef.current.find(q => q.id === cond.b)
       if (b) { setJoined([b.id]); window.setTimeout(() => setJoined([]), 1700) }
@@ -240,12 +250,18 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
     }, delay)
   }
 
-  // 连画扫描 + auto
+  // 连画扫描 + 排序谜题 + auto
   useEffect(() => {
     const t = window.setTimeout(() => {
       for (const s of availNow()) {
         const c = s.cond
         if (c.kind === 'auto') { fire(s); continue }
+        if (c.kind === 'arrange') {
+          const okArr = c.order.every((pid, i) =>
+            panelsRef.current.find(q => q.id === pid)?.cell === c.cells[i])
+          if (okArr) fire(s)
+          continue
+        }
         if (c.kind !== 'connect') continue
         const a = panelsRef.current.find(q => q.id === c.a)
         const b = panelsRef.current.find(q => q.id === c.b)
@@ -427,6 +443,23 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
       const m2 = edgeMid(b.cell, OPP[c.aside])
       hintBeams.push({ id: -1 - hintBeams.length, x1: m1.x, y1: m1.y, x2: m2.x, y2: m2.y })
     }
+    // 排序谜题的深提示：相邻两个年头之间拉起光路
+    for (const s of avail) {
+      if (s.cond.kind !== 'arrange') continue
+      const { order } = s.cond
+      for (let i = 0; i < order.length - 1; i++) {
+        const a = panels.find(q => q.id === order[i])
+        const b = panels.find(q => q.id === order[i + 1])
+        if (!a || !b) continue
+        const ra = cellRect(a.cell)
+        const rb = cellRect(b.cell)
+        hintBeams.push({
+          id: -10 - hintBeams.length,
+          x1: ra.x + ra.w / 2, y1: ra.y + ra.h - 4,
+          x2: rb.x + rb.w / 2, y2: rb.y + rb.h - 4,
+        })
+      }
+    }
   }
 
   const resonance = (() => {
@@ -543,20 +576,20 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
               {Object.keys(p.layers[0].edges ?? {}).map(side => (
                 <i key={side} className={`leak side-${side} ${liveEdges.some(le => le.id === p.id && le.side === side) ? 'live' : ''}`} />
               ))}
-              {rings.map(({ s, spot }) => {
+              {hint >= 1 && rings.map(({ s, spot }) => {
                 const m = viewToPanel(v, spot!.x + spot!.w / 2, spot!.y + spot!.h / 2)
                 if (!m.inside) return null
                 const isDive = s.cond.kind === 'dive'
                 return (
                   <i
                     key={s.id}
-                    className={`ring ${hint >= 1 ? 'hot' : ''} ${isDive ? 'dive' : ''}`}
+                    className={`ring hot ${isDive ? 'dive' : ''}`}
                     style={{ left: `${m.x}%`, top: `${m.y}%` }}
                   />
                 )
               })}
-              {peelable(p.id) && p.layers.length > 1 && p.dive.length === 0 && (
-                <i className={`dogear ${hint >= 1 ? 'hot' : ''}`} />
+              {hint >= 1 && peelable(p.id) && p.layers.length > 1 && p.dive.length === 0 && (
+                <i className="dogear hot" />
               )}
               {def.goal === p.id && <i className="beacon" />}
               {bursts.filter(b => b.panel === p.id).map(b => (

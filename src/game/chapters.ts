@@ -131,31 +131,27 @@ export const CHX2: ChapterDef = {
 }
 
 export const CH3: ChapterDef = {
-  id: 'ch3', no: '伍', name: '年画', poem: '一年撕去一层，撕到一九七八。', where: '一九六一至七八 · 厂门口',
+  id: 'ch3', no: '伍', name: '流年', poem: '四面墙，四个年头。路对上了，人才走得过去。', where: '一九六一至七八 · 厂门口',
   ambient: '/story/amb-wind.mp3', weather: 'dust',
-  hero: { panel: 'nianhua', x: 62, y: 78 },
-  goal: 'gate',
+  hero: { panel: 'y1961', x: 50, y: 78 },
+  goal: 'y1978',
   panels: [
-    {
-      id: 'nianhua', img: '/story/a3.webp', cell: 0,
-      layers: [
-        { img: '/story/a3.webp', tint: 'sepia(0.75) brightness(0.82)', year: '一九六一' },
-        { img: '/story/a3.webp', tint: 'sepia(0.55) brightness(0.9)', year: '一九六六' },
-        { img: '/story/a3.webp', tint: 'sepia(0.3) brightness(0.96)', year: '一九七二' },
-        { img: '/story/a3-1978.webp', edges: { r: 'bang' }, year: '一九七八' },
-      ],
-    },
-    { id: 'gate', img: '/story/a3-gate.webp', cell: 1, edges: { l: 'bang' },
-      spots: [{ id: 'plaque', x: 36, y: 12, w: 28, h: 20 }] },
+    { id: 'y1972', img: '/story/y1972.webp', cell: 0 },
+    { id: 'y1966', img: '/story/y1966.webp', cell: 1 },
+    { id: 'y1978', img: '/story/y1978.webp', cell: 3,
+      spots: [{ id: 'gate', x: 60, y: 34, w: 34, h: 48 }] },
+    { id: 'y1961', img: '/story/y1961.webp', cell: 2 },
   ],
   steps: [
-    { id: 'p1', cond: { kind: 'peel', panel: 'nianhua' }, fx: { yearFlash: '一九六六', sfx: '/story/sfx-tear.mp3' } },
-    { id: 'p2', cond: { kind: 'peel', panel: 'nianhua' }, after: ['p1'], fx: { yearFlash: '一九七二', sfx: '/story/sfx-tear.mp3' } },
-    { id: 'p3', cond: { kind: 'peel', panel: 'nianhua' }, after: ['p2'], fx: { yearFlash: '一九七八', sfx: '/story/sfx-tear.mp3' } },
-    { id: 'c-gate', cond: { kind: 'connect', a: 'nianhua', aside: 'r', b: 'gate' }, after: ['p3'],
-      fx: { walk: true, sfx: '/story/sfx-chime.mp3' } },
-    { id: 's-plaque', cond: { kind: 'spot', panel: 'gate', spot: 'plaque' }, after: ['c-gate'],
-      fx: { glow: 'gate', collect: true, done: true, sfx: '/story/sfx-chime.mp3' } },
+    { id: 's-order', cond: { kind: 'arrange', order: ['y1961', 'y1966', 'y1972', 'y1978'], cells: [0, 1, 2, 3] },
+      fx: { walkThrough: ['y1961', 'y1966', 'y1972', 'y1978'], burst: 'sun', burstPanel: 'y1978',
+        yearFlash: '一九七八', sfx: '/story/sfx-chime.mp3' } },
+    { id: 'd-gate', cond: { kind: 'dive', panel: 'y1978', spot: 'gate' }, after: ['s-order'],
+      fx: { sfx: '/story/sfx-peel.mp3', pushView: { panel: 'y1978', view: {
+        img: '/story/a3-gate.webp',
+        spots: [{ id: 'plaque', x: 36, y: 12, w: 28, h: 20 }] } } } },
+    { id: 's-plaque', cond: { kind: 'spot', panel: 'y1978', spot: 'plaque' }, after: ['d-gate'],
+      fx: { glow: 'y1978', collect: true, done: true, sfx: '/story/sfx-chime.mp3' } },
   ],
 }
 
