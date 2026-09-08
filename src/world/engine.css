@@ -133,7 +133,7 @@
     0 0 0 9px #1c130a,
     0 24px 48px rgba(0, 0, 0, 0.62);
   transition: left 0.5s cubic-bezier(0.22, 0.9, 0.24, 1), top 0.5s cubic-bezier(0.22, 0.9, 0.24, 1),
-    box-shadow 0.4s ease, opacity 0.4s ease;
+    box-shadow 0.4s ease, opacity 0.4s ease, transform 0.5s cubic-bezier(0.22, 0.9, 0.24, 1), filter 0.5s ease;
   cursor: grab;
   z-index: 2;
 }
@@ -143,7 +143,7 @@
   z-index: 12;
   transform: rotate(1.2deg) scale(1.015);
 }
-.pnl.born { animation: pnl-born 0.65s cubic-bezier(0.2, 0.9, 0.3, 1.2); }
+.pnl.born { animation: pnl-born 0.65s cubic-bezier(0.2, 0.9, 0.3, 1.2) backwards; }
 @keyframes pnl-born {
   from { transform: scale(0.72); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
@@ -192,6 +192,44 @@
   to { opacity: 0; }
 }
 .pnl.dim .camera img { filter: brightness(0.48) saturate(0.62); }
+
+/* 穿画运镜：这幅画把你吸进去，其余退入暗处 */
+.board.hasfocus .pnl { opacity: 0.3; filter: saturate(0.55) brightness(0.72); }
+.board.hasfocus .pnl.focus {
+  opacity: 1;
+  filter: none;
+  transform: scale(1.055);
+  z-index: 9;
+  box-shadow:
+    0 0 0 2px #0e0904,
+    0 0 0 5px #3a2a16,
+    0 0 0 6px rgba(255, 228, 170, 0.28),
+    0 0 0 9px #1c130a,
+    0 0 64px rgba(255, 204, 118, 0.5),
+    0 30px 60px rgba(0, 0, 0, 0.7);
+}
+
+/* 点按涟漪：每一次触碰都有回应 */
+.ripple {
+  position: absolute;
+  width: 54px;
+  height: 54px;
+  margin: -27px 0 0 -27px;
+  border: 1.6px solid rgba(255, 232, 182, 0.45);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 8;
+  animation: rip-out 0.7s ease-out forwards;
+}
+.ripple.strong {
+  border-color: rgba(255, 222, 152, 0.9);
+  border-width: 2px;
+  box-shadow: 0 0 16px rgba(255, 214, 140, 0.4), inset 0 0 10px rgba(255, 222, 152, 0.3);
+}
+@keyframes rip-out {
+  from { transform: scale(0.24); opacity: 0.95; }
+  to { transform: scale(1.5); opacity: 0; }
+}
 
 .pnl-year {
   position: absolute;

@@ -67,7 +67,7 @@ interface Beam { id: number; x1: number; y1: number; x2: number; y2: number }
 interface Look { panel: string; x: number; y: number }
 
 export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () => void; onCollect: () => void }) {
-  const [panels, setPanels] = useState<PanelState[]>(() => def.panels.map(toState))
+  const [panels, setPanels] = useState<PanelState[]>(() => def.panels.map(d => ({ ...toState(d), born: true })))
   const [done, setDone] = useState<string[]>([])
   const [hint, setHint] = useState(0)
   const [beams, setBeams] = useState<Beam[]>([])
@@ -89,6 +89,15 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
   const beamSeq = useRef(0)
   const burstSeq = useRef(0)
   const [bursts, setBursts] = useState<Array<{ id: number; panel: string; kind: string; year?: string }>>([])
+  const [ripples, setRipples] = useState<Array<{ id: number; x: number; y: number; strong: boolean }>>([])
+  const [focus, setFocus] = useState<string | null>(null)
+  const rippleSeq = useRef(0)
+
+  const ripple = (x: number, y: number, strong: boolean) => {
+    const id = ++rippleSeq.current
+    setRipples(rs => [...rs, { id, x, y, strong }])
+    window.setTimeout(() => setRipples(rs => rs.filter(r => r.id !== id)), 750)
+  }
   panelsRef.current = panels
   heroRef.current = hero
 
@@ -148,6 +157,12 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
       const id = ++burstSeq.current
       setBursts(bs => [...bs, { id, panel: pid, kind: fx.burst ?? 'year', year: fx.yearFlash }])
       window.setTimeout(() => setBursts(bs => bs.filter(x => x.id !== id)), 2200)
+    }
+    // 穿画运镜：世界把你吸进去——这幅画亮起放大，其余退入暗处
+    if (fx.pushView) {
+      const pid = fx.pushView.panel
+      setFocus(pid)
+      window.setTimeout(() => setFocus(f => (f === pid ? null : f)), 1050)
     }
     let delay = 0
 
@@ -417,8 +432,8 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
         let vx = fx, vy = fy
         if (v.crop) { vx = v.crop.x + (fx / 100) * v.crop.w; vy = v.crop.y + (fy / 100) * v.crop.h }
         const sp = (v.spots ?? []).find(s => vx >= s.x && vx <= s.x + s.w && vy >= s.y && vy <= s.y + s.h)
-        if (sp) clickSpot(p.id, sp.id)
-        else { poke(); peek(p.id, fx, fy) }
+        if (sp) { ripple(px, py, true); clickSpot(p.id, sp.id) }
+        else { poke(); ripple(px, py, false); peek(p.id, fx, fy) }
         return
       }
       dropPanel(p, {
@@ -533,7 +548,7 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
   return (
     <div className="board-wrap">
       {def.weather && <div className={`weather weather-${def.weather}`} />}
-      <div className="board" ref={boardRef}>
+      <div className={`board ${focus ? 'hasfocus' : ''}`} ref={boardRef}>
         {([0, 1, 2, 3] as Cell[]).map(c => {
           const r = cellRect(c)
           // 拖着一幅"里面有世界"的画悬在空框上时，空框会亮起来等你松手
@@ -556,13 +571,13 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
           return <div key={`br-${i}`} className={`bridge ${lp.aside === 'r' || lp.aside === 'l' ? 'v' : 'h'}`} style={st} />
         })}
 
-        {panels.map(p => {
+        {panels.map((p, pi) => {
           const v = curView(p)
           const r = cellRect(p.cell)
           const dragging = drag?.id === p.id
           const style = dragging
             ? { left: `${drag.x}%`, top: `${drag.y}%`, width: `${CW}%`, height: `${CW}%` }
-            : { left: `${r.x}%`, top: `${r.y}%`, width: `${r.w}%`, height: `${r.h}%` }
+            : { left: `${r.x}%`, top: `${r.y}%`, width: `${r.w}%`, height: `${r.h}%`, animationDelay: p.born ? `${pi * 0.14}s` : undefined }
           const rings = spotStepsFor(p.id)
             .map(s => ({ s, spot: (v.spots ?? []).find(sp => sp.id === (s.cond as { spot: string }).spot) }))
             .filter(x => !!x.spot)
@@ -573,7 +588,7 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
           return (
             <div
               key={p.id}
-              className={`pnl ${p.lit ? 'lit' : ''} ${p.dim ? 'dim' : ''} ${p.born ? 'born' : ''} ${dragging ? 'drag' : ''} ${joined.includes(p.id) ? 'joined' : ''} ${resonance && (resonance.other === p.id || drag?.id === p.id) ? 'resonant' : ''} ${p.extractId && p.dive.length ? 'extractable' : ''}`}
+              className={`pnl ${p.lit ? 'lit' : ''} ${p.dim ? 'dim' : ''} ${p.born ? 'born' : ''} ${dragging ? 'drag' : ''} ${joined.includes(p.id) ? 'joined' : ''} ${focus === p.id ? 'focus' : ''} ${resonance && (resonance.other === p.id || drag?.id === p.id) ? 'resonant' : ''} ${p.extractId && p.dive.length ? 'extractable' : ''}`}
               style={style}
               onPointerDown={e => onPanelDown(e, p)}
             >
@@ -666,6 +681,10 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
           {hintBeams.map(b => <line key={`h${b.id}`} className="res" x1={b.x1} y1={b.y1} x2={b.x2} y2={b.y2} />)}
           {resonance && <line className="res" x1={resonance.x1} y1={resonance.y1} x2={resonance.x2} y2={resonance.y2} />}
         </svg>
+
+        {ripples.map(rp => (
+          <i key={rp.id} className={`ripple ${rp.strong ? 'strong' : ''}`} style={{ left: `${rp.x}%`, top: `${rp.y}%` }} />
+        ))}
 
         {through && (
           <div className="through">
