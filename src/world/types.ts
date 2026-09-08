@@ -12,13 +12,15 @@ export type Side = 'l' | 'r' | 't' | 'b'
 
 export interface Spot { id: string; x: number; y: number; w: number; h: number }
 
-/** 一层视野：一幅画当前看到的样子。crop = 只取原画的这一块（连续变焦） */
+/** 一层视野：一幅画当前看到的样子。crop = 只取原画的这一块（连续变焦）
+ *  under = 被取出立成独立画时，这层之下还压着一层（可被揭开） */
 export interface View {
   img: string
   crop?: { x: number; y: number; w: number; h: number }
   tint?: string
   year?: string
   spots?: Spot[]
+  under?: Layer
 }
 
 /** 可揭的一层画 */

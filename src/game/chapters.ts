@@ -104,7 +104,7 @@ export const CH2: ChapterDef = {
 }
 
 export const CHX2: ChapterDef = {
-  id: 'chx2', no: '肆', name: '雨夜', poem: '檐下有一家书店。把灯点起来。', where: '一九六一 · 书店檐下',
+  id: 'chx2', no: '肆', name: '雨夜', poem: '檐下有一家书店。取出来，擦亮它。', where: '一九六一 · 书店檐下',
   ambient: '/sfx/rain.wav', weather: 'rain',
   hero: { panel: 'rain', x: 50, y: 78 },
   goal: 'win',
@@ -118,11 +118,14 @@ export const CHX2: ChapterDef = {
     { id: 'd-eave', cond: { kind: 'dive', panel: 'rain', spot: 'eave' },
       fx: { sfx: '/story/sfx-peel.mp3', pushView: { panel: 'rain', extractId: 'book', view: {
         img: '/story/b4-book.webp',
+        tint: 'brightness(0.4) saturate(0.5)',
         edges: { r: 'deng' },
-        spots: [{ id: 'lamp', x: 50, y: 2, w: 32, h: 30 }] } } } },
-    { id: 's-lamp', cond: { kind: 'spot', panel: 'book', spot: 'lamp' }, after: ['d-eave'],
-      fx: { burst: 'spark', burstPanel: 'book', sfx: '/story/sfx-chime.mp3',
-        swapView: { panel: 'book', tint: 'brightness(1.2) sepia(0.25)' },
+        under: { img: '/story/b4-book.webp', edges: { r: 'deng' },
+          spots: [{ id: 'lamp', x: 50, y: 2, w: 32, h: 30 }] } } } } },
+    { id: 'p-wipe', cond: { kind: 'peel', panel: 'book' }, after: ['d-eave'],
+      fx: { sfx: '/story/sfx-peel.mp3', burst: 'spark', burstPanel: 'book' } },
+    { id: 's-lamp', cond: { kind: 'spot', panel: 'book', spot: 'lamp' }, after: ['p-wipe'],
+      fx: { sfx: '/story/sfx-chime.mp3',
         spawn: { def: { id: 'win', img: '/story/a2-windows.webp', cell: 2, edges: { l: 'deng' },
           tint: 'brightness(0.8)',
           spots: [{ id: 'her', x: 44, y: 36, w: 24, h: 32 }] },
@@ -189,7 +192,7 @@ export const CHX3: ChapterDef = {
 }
 
 export const CHX4: ChapterDef = {
-  id: 'chx4', no: '捌', name: '婚礼', poem: '门后面是他们的新房。取出来，点烛。', where: '一九八〇 · 新房',
+  id: 'chx4', no: '捌', name: '婚礼', poem: '门后面是他们的新房。取出来，擦亮，点烛。', where: '一九八〇 · 新房',
   ambient: '/sfx/murmur.wav',
   hero: { panel: 'wedding', x: 50, y: 80 },
   panels: [
@@ -202,12 +205,16 @@ export const CHX4: ChapterDef = {
     { id: 'd-door', cond: { kind: 'dive', panel: 'wedding', spot: 'door' },
       fx: { sfx: '/story/sfx-peel.mp3', pushView: { panel: 'wedding', extractId: 'newroom', view: {
         img: '/story/b8-room.webp',
-        spots: [
-          { id: 'candle', x: 54, y: 20, w: 28, h: 34 },
-          { id: 'xi', x: 38, y: 12, w: 22, h: 22 },
-        ] } } } },
-    { id: 's-candle', cond: { kind: 'spot', panel: 'newroom', spot: 'candle' }, after: ['d-door'],
-      fx: { burst: 'spark', burstPanel: 'newroom', music: '/sfx/fire.wav',
+        tint: 'brightness(0.38) saturate(0.55)',
+        under: { img: '/story/b8-room.webp',
+          spots: [
+            { id: 'candle', x: 54, y: 20, w: 28, h: 34 },
+            { id: 'xi', x: 38, y: 12, w: 22, h: 22 },
+          ] } } } } },
+    { id: 'p-dark', cond: { kind: 'peel', panel: 'newroom' }, after: ['d-door'],
+      fx: { sfx: '/story/sfx-peel.mp3', burst: 'spark', burstPanel: 'newroom' } },
+    { id: 's-candle', cond: { kind: 'spot', panel: 'newroom', spot: 'candle' }, after: ['p-dark'],
+      fx: { music: '/sfx/fire.wav',
         swapView: { panel: 'newroom', tint: 'brightness(1.22) sepia(0.3) saturate(1.2)' },
         sfx: '/story/sfx-chime.mp3' } },
     { id: 's-xi', cond: { kind: 'spot', panel: 'newroom', spot: 'xi' }, after: ['s-candle'],

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { Cell, ChapterDef, PanelDef, PanelState, Side, Step, View } from './types'
+import type { Cell, ChapterDef, Layer, PanelDef, PanelState, Side, Step, View } from './types'
 import './engine.css'
 
 // ------------------------------------------------------------
@@ -91,7 +91,10 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
   const [bursts, setBursts] = useState<Array<{ id: number; panel: string; kind: string; year?: string }>>([])
   const [ripples, setRipples] = useState<Array<{ id: number; x: number; y: number; strong: boolean }>>([])
   const [focus, setFocus] = useState<string | null>(null)
+  const [cursor, setCursor] = useState<{ x: number; y: number; hot: boolean; down: boolean } | null>(null)
+  const [flies, setFlies] = useState<number[]>([])
   const rippleSeq = useRef(0)
+  const flySeq = useRef(0)
 
   const ripple = (x: number, y: number, strong: boolean) => {
     const id = ++rippleSeq.current
@@ -253,7 +256,12 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
           const top = q.dive[q.dive.length - 1]
           return { ...q, dive: [...q.dive.slice(0, -1), { ...top, img: fx.swapView!.img ?? top.img, tint: fx.swapView!.tint ?? top.tint, spots: fx.swapView!.spots ?? top.spots }] }
         })
-        if (fx.collect) onCollect()
+        if (fx.collect) {
+          const id = ++flySeq.current
+          setFlies(fs => [...fs, id])
+          window.setTimeout(() => setFlies(fs => fs.filter(f => f !== id)), 1300)
+          onCollect()
+        }
         if (fx.done) window.setTimeout(onDone, 1700)
       }
       if (fx.spawn) {
@@ -313,11 +321,12 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
     if (!occupant && cur.dive.length > 0 && cur.extractId && !panelsRef.current.some(q => q.id === cur.extractId)) {
       const v = curView(cur)
       const nid = cur.extractId
+      const topLayer: Layer = { img: v.img, edges: (v as { edges?: PanelDef['edges'] }).edges, tint: v.tint, year: v.year, spots: v.spots }
       setPanels(prev => prev
         .map(q => q.id === cur.id ? { ...q, dive: q.dive.slice(0, -1), extractId: undefined } : q)
         .concat({
           id: nid, cell: target, dive: [], dim: false, lit: false, born: true,
-          layers: [{ img: v.img, edges: (v as { edges?: PanelDef['edges'] }).edges, tint: v.tint, year: v.year, spots: v.spots }],
+          layers: v.under ? [topLayer, v.under] : [topLayer],
         }))
       if (heroRef.current?.panel === cur.id) setHero({ panel: nid, x: 50, y: 70 })
       play('/story/sfx-chime.mp3', 0.45)
@@ -386,6 +395,14 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
     lookTimer.current = window.setTimeout(() => setLook(null), 620)
   }
 
+  /** 指针落在画的哪个圆点上（含 crop 换算） */
+  const spotAt = (p: PanelState, fx: number, fy: number) => {
+    const v = curView(p)
+    let vx = fx, vy = fy
+    if (v.crop) { vx = v.crop.x + (fx / 100) * v.crop.w; vy = v.crop.y + (fy / 100) * v.crop.h }
+    return (v.spots ?? []).find(s => vx >= s.x && vx <= s.x + s.w && vy >= s.y && vy <= s.y + s.h) ?? null
+  }
+
   const goBack = (panelId: string) => {
     const p = panelsRef.current.find(q => q.id === panelId)
     if (!p || !p.dive.length) return
@@ -428,10 +445,7 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
         const py = (ev.clientY - rect.top) / rect.height * 100
         const fx = ((px - r.x) / r.w) * 100
         const fy = ((py - r.y) / r.h) * 100
-        const v = curView(p)
-        let vx = fx, vy = fy
-        if (v.crop) { vx = v.crop.x + (fx / 100) * v.crop.w; vy = v.crop.y + (fy / 100) * v.crop.h }
-        const sp = (v.spots ?? []).find(s => vx >= s.x && vx <= s.x + s.w && vy >= s.y && vy <= s.y + s.h)
+        const sp = spotAt(p, fx, fy)
         if (sp) { ripple(px, py, true); clickSpot(p.id, sp.id) }
         else { poke(); ripple(px, py, false); peek(p.id, fx, fy) }
         return
@@ -546,7 +560,19 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
   }
 
   return (
-    <div className="board-wrap">
+    <div
+      className="board-wrap"
+      onPointerMove={e => {
+        const rect = boardRef.current?.getBoundingClientRect()
+        if (!rect) return
+        const x = ((e.clientX - rect.left) / rect.width) * 100
+        const y = ((e.clientY - rect.top) / rect.height) * 100
+        setCursor(c => ({ x, y, hot: c?.hot ?? false, down: c?.down ?? false }))
+      }}
+      onPointerDown={() => setCursor(c => (c ? { ...c, down: true } : c))}
+      onPointerUp={() => setCursor(c => (c ? { ...c, down: false } : c))}
+      onPointerLeave={() => setCursor(null)}
+    >
       {def.weather && <div className={`weather weather-${def.weather}`} />}
       <div className={`board ${focus ? 'hasfocus' : ''}`} ref={boardRef}>
         {([0, 1, 2, 3] as Cell[]).map(c => {
@@ -591,6 +617,19 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
               className={`pnl ${p.lit ? 'lit' : ''} ${p.dim ? 'dim' : ''} ${p.born ? 'born' : ''} ${dragging ? 'drag' : ''} ${joined.includes(p.id) ? 'joined' : ''} ${focus === p.id ? 'focus' : ''} ${resonance && (resonance.other === p.id || drag?.id === p.id) ? 'resonant' : ''} ${p.extractId && p.dive.length ? 'extractable' : ''}`}
               style={style}
               onPointerDown={e => onPanelDown(e, p)}
+              onPointerMove={e => {
+                const board = boardRef.current
+                if (!board) return
+                const rect = board.getBoundingClientRect()
+                const px = ((e.clientX - rect.left) / rect.width) * 100
+                const py = ((e.clientY - rect.top) / rect.height) * 100
+                const rr = cellRect(p.cell)
+                const fx = ((px - rr.x) / rr.w) * 100
+                const fy = ((py - rr.y) / rr.h) * 100
+                const hot = !!spotAt(p, fx, fy)
+                setCursor(c => (c && c.hot !== hot ? { ...c, hot } : c))
+              }}
+              onPointerLeave={() => setCursor(c => (c?.hot ? { ...c, hot: false } : c))}
             >
               <div className="artwrap" key={viewKey}>
                 <div className="camera" style={cameraOf(p, v)}>
@@ -690,6 +729,15 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
           <div className="through">
             <img src={through} draggable={false} alt="" />
           </div>
+        )}
+
+        {flies.map(f => <i key={f} className="wrap-fly" />)}
+
+        {cursor && (
+          <i
+            className={`cursor ${cursor.hot ? 'hot' : ''} ${cursor.down ? 'down' : ''}`}
+            style={{ left: `${cursor.x}%`, top: `${cursor.y}%` }}
+          />
         )}
       </div>
     </div>

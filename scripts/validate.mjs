@@ -23,7 +23,7 @@ for (const [name, def] of Object.entries(mod)) {
   // 可取出的世界 = 虚拟画
   for (const s of def.steps) {
     const pv = s.fx.pushView
-    if (pv?.extractId) defs.set(pv.extractId, { id: pv.extractId, img: pv.view.img, cell: 0, spots: pv.view.spots, layers: [pv.view] })
+    if (pv?.extractId) defs.set(pv.extractId, { id: pv.extractId, img: pv.view.img, cell: 0, spots: pv.view.spots, layers: pv.view.under ? [pv.view, pv.view.under] : [pv.view] })
   }
 
   // 每幅画可出现的所有视野里的 spot
