@@ -390,8 +390,7 @@
 }
 
 /* 目的地的灯 */
-.beacon {
-  position: absolute;
+.beacon {  position: absolute;
   left: 50%;
   top: 8%;
   width: 12px;
@@ -406,4 +405,136 @@
 @keyframes beacon-pulse {
   0%, 100% { transform: scale(0.8); opacity: 0.55; }
   50% { transform: scale(1.35); opacity: 1; }
+}
+
+/* ---------- 天气：雨 / 雪 / 岁月的尘 ---------- */
+.weather {
+  position: absolute;
+  inset: -20%;
+  z-index: 3;
+  pointer-events: none;
+}
+.weather-rain {
+  background:
+    repeating-linear-gradient(105deg, transparent 0 46px, rgba(200, 216, 235, 0.10) 46px 47.5px, transparent 47.5px 92px),
+    repeating-linear-gradient(100deg, transparent 0 70px, rgba(200, 216, 235, 0.07) 70px 71px, transparent 71px 140px);
+  animation: rain-fall 0.9s linear infinite;
+}
+@keyframes rain-fall {
+  from { transform: translateY(-4%); }
+  to { transform: translateY(4%); }
+}
+.weather-snow {
+  background:
+    radial-gradient(circle 2.2px at 12% 18%, rgba(240, 244, 250, 0.7) 60%, transparent 70%),
+    radial-gradient(circle 1.6px at 34% 62%, rgba(240, 244, 250, 0.55) 60%, transparent 70%),
+    radial-gradient(circle 2.6px at 56% 8%, rgba(240, 244, 250, 0.65) 60%, transparent 70%),
+    radial-gradient(circle 1.8px at 71% 44%, rgba(240, 244, 250, 0.5) 60%, transparent 70%),
+    radial-gradient(circle 2px at 88% 76%, rgba(240, 244, 250, 0.6) 60%, transparent 70%),
+    radial-gradient(circle 1.5px at 22% 84%, rgba(240, 244, 250, 0.5) 60%, transparent 70%),
+    radial-gradient(circle 2.3px at 45% 36%, rgba(240, 244, 250, 0.6) 60%, transparent 70%),
+    radial-gradient(circle 1.7px at 66% 88%, rgba(240, 244, 250, 0.5) 60%, transparent 70%),
+    radial-gradient(circle 2.1px at 82% 26%, rgba(240, 244, 250, 0.6) 60%, transparent 70%),
+    radial-gradient(circle 1.6px at 8% 52%, rgba(240, 244, 250, 0.5) 60%, transparent 70%);
+  background-size: 62% 62%;
+  animation: snow-drift 9s linear infinite;
+}
+@keyframes snow-drift {
+  from { transform: translate(0, -6%); }
+  to { transform: translate(-3%, 6%); }
+}
+.weather-dust {
+  background:
+    radial-gradient(circle 1.6px at 18% 30%, rgba(255, 226, 170, 0.4) 60%, transparent 70%),
+    radial-gradient(circle 1.2px at 44% 70%, rgba(255, 226, 170, 0.32) 60%, transparent 70%),
+    radial-gradient(circle 1.8px at 68% 22%, rgba(255, 226, 170, 0.36) 60%, transparent 70%),
+    radial-gradient(circle 1.3px at 86% 58%, rgba(255, 226, 170, 0.3) 60%, transparent 70%),
+    radial-gradient(circle 1.5px at 30% 88%, rgba(255, 226, 170, 0.34) 60%, transparent 70%),
+    radial-gradient(circle 1.1px at 58% 46%, rgba(255, 226, 170, 0.3) 60%, transparent 70%);
+  background-size: 54% 54%;
+  animation: dust-drift 16s ease-in-out infinite alternate;
+}
+@keyframes dust-drift {
+  from { transform: translate(-2%, -1%); opacity: 0.7; }
+  to { transform: translate(2%, 2%); opacity: 1; }
+}
+
+/* ---------- 机关动画 ---------- */
+.burst {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+/* 齿轮咬合 */
+.burst-gear svg {
+  width: 46%;
+  filter: drop-shadow(0 0 10px rgba(255, 214, 140, 0.55));
+  animation: gear-in 2.1s ease both;
+}
+.burst-gear path, .burst-gear circle {
+  fill: rgba(40, 28, 14, 0.92);
+  stroke: rgba(255, 226, 160, 0.85);
+  stroke-width: 1.6;
+}
+.burst-gear .g1 { transform-origin: 50% 50%; animation: gear-spin 1.6s cubic-bezier(0.3, 0.7, 0.3, 1) both; }
+.burst-gear .g2 { transform-origin: 76% 74%; animation: gear-spin-r 1.6s cubic-bezier(0.3, 0.7, 0.3, 1) both; }
+@keyframes gear-spin { from { transform: rotate(-160deg); } to { transform: rotate(0deg); } }
+@keyframes gear-spin-r { from { transform: rotate(200deg); } to { transform: rotate(0deg); } }
+@keyframes gear-in {
+  0% { opacity: 0; transform: scale(1.5); }
+  18% { opacity: 1; transform: scale(1); }
+  78% { opacity: 1; }
+  100% { opacity: 0; transform: scale(0.94); }
+}
+/* 火光迸亮：三层扩散的圆 */
+.burst-spark i {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 30%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 226, 160, 0.85);
+  transform: translate(-50%, -50%) scale(0.2);
+  animation: spark-ring 1.5s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+.burst-spark i:nth-child(2) { animation-delay: 0.18s; border-color: rgba(255, 200, 120, 0.6); }
+.burst-spark i:nth-child(3) { animation-delay: 0.36s; border-color: rgba(255, 180, 90, 0.4); }
+@keyframes spark-ring {
+  from { transform: translate(-50%, -50%) scale(0.15); opacity: 1; }
+  to { transform: translate(-50%, -50%) scale(2.6); opacity: 0; }
+}
+/* 日出：一轮暖光从画底升起 */
+.burst-sun i {
+  position: absolute;
+  left: 50%;
+  bottom: -30%;
+  width: 60%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255, 214, 130, 0.85), rgba(255, 170, 80, 0.3) 55%, transparent 72%);
+  animation: sun-rise 2.1s cubic-bezier(0.25, 0.7, 0.3, 1) both;
+}
+@keyframes sun-rise {
+  0% { transform: translate(-50%, 30%); opacity: 0; }
+  25% { opacity: 1; }
+  70% { transform: translate(-50%, -55%); opacity: 1; }
+  100% { transform: translate(-50%, -75%); opacity: 0; }
+}
+/* 时间跳转：大字年份闪过 */
+.burst-year span {
+  font-size: clamp(40px, 9vmin, 96px);
+  letter-spacing: 0.2em;
+  color: rgba(255, 236, 195, 0.95);
+  text-shadow: 0 2px 22px rgba(0, 0, 0, 0.75), 0 0 40px rgba(255, 210, 130, 0.5);
+  animation: year-flash 2s ease both;
+}
+@keyframes year-flash {
+  0% { opacity: 0; transform: scale(1.25); filter: blur(6px); }
+  22% { opacity: 1; transform: scale(1); filter: blur(0); }
+  72% { opacity: 1; }
+  100% { opacity: 0; transform: scale(0.96); }
 }

@@ -34,3 +34,4 @@ scripts/*.png
 shot-*.png
 shots/
 __pycache__/
+art-src/*.png

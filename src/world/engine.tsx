@@ -87,6 +87,8 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
   const idle2 = useRef<number>(0)
   const lookTimer = useRef<number>(0)
   const beamSeq = useRef(0)
+  const burstSeq = useRef(0)
+  const [bursts, setBursts] = useState<Array<{ id: number; panel: string; kind: string; year?: string }>>([])
   panelsRef.current = panels
   heroRef.current = hero
 
@@ -141,6 +143,12 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
     const fx = step.fx
     if (fx.sfx) play(fx.sfx, 0.5)
     if (fx.music) play(fx.music, 0.5)
+    if (fx.burst || fx.yearFlash) {
+      const pid = (step.cond as { panel?: string }).panel ?? (step.cond as { b?: string }).b ?? def.panels[0].id
+      const id = ++burstSeq.current
+      setBursts(bs => [...bs, { id, panel: pid, kind: fx.burst ?? 'year', year: fx.yearFlash }])
+      window.setTimeout(() => setBursts(bs => bs.filter(x => x.id !== id)), 2200)
+    }
     let delay = 0
 
     const cond = step.cond
@@ -474,6 +482,7 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
 
   return (
     <div className="board-wrap">
+      {def.weather && <div className={`weather weather-${def.weather}`} />}
       <div className="board" ref={boardRef}>
         {([0, 1, 2, 3] as Cell[]).map(c => {
           const r = cellRect(c)
@@ -550,6 +559,25 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
                 <i className={`dogear ${hint >= 1 ? 'hot' : ''}`} />
               )}
               {def.goal === p.id && <i className="beacon" />}
+              {bursts.filter(b => b.panel === p.id).map(b => (
+                <div key={b.id} className={`burst burst-${b.kind}`}>
+                  {b.kind === 'gear' && (
+                    <svg viewBox="0 0 100 100">
+                      <g className="g1">
+                        <path d="M50 18 l5 8 9-2 1 9 9 1 -2 9 8 5 -8 5 2 9 -9 1 -1 9 -9-2 -5 8 -5-8 -9 2 -1-9 -9-1 2-9 -8-5 8-5 -2-9 9-1 1-9 9 2z" />
+                        <circle cx="50" cy="50" r="12" />
+                      </g>
+                      <g className="g2">
+                        <path d="M76 58 l3 5 6-1 0 6 6 1 -2 6 5 3 -5 3 2 6 -6 0 0 6 -6-1 -3 5 -3-5 -6 1 0-6 -6 0 2-6 -5-3 5-3 -2-6 6 0 0-6 6 1z" />
+                        <circle cx="76" cy="74" r="7" />
+                      </g>
+                    </svg>
+                  )}
+                  {b.kind === 'spark' && (<><i /><i /><i /></>)}
+                  {b.kind === 'sun' && <i />}
+                  {b.kind === 'year' && <span>{b.year}</span>}
+                </div>
+              ))}
               {hero && hero.panel === p.id && (() => {
                 const m = viewToPanel(v, hero.x, hero.y)
                 if (!m.inside) return null

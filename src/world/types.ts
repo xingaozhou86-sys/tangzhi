@@ -71,6 +71,10 @@ export interface Fx {
   undim?: string
   sfx?: string
   music?: string
+  /** 机关动画：齿轮咬合 / 火光迸亮 / 日出 */
+  burst?: 'gear' | 'spark' | 'sun'
+  /** 时间跳转：大字年份在画上闪过 */
+  yearFlash?: string
   /** 连画时他走过去 */
   walk?: boolean
   collect?: boolean
@@ -86,6 +90,8 @@ export interface ChapterDef {
   poem: string
   where?: string
   ambient?: string
+  /** 天气：雨 / 雪 / 岁月的尘 */
+  weather?: 'rain' | 'snow' | 'dust'
   hero?: { panel: string; x: number; y: number }
   goal?: string
   panels: PanelDef[]
