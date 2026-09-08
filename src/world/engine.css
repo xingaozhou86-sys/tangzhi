@@ -207,6 +207,22 @@
   50% { transform: scale(1.12); }
 }
 
+/* ---------- 画中微光：落在可交互物上的一束暖光 ---------- */
+.glowspot {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 4;
+  background: radial-gradient(closest-side, rgba(255, 226, 160, 0.30), rgba(255, 214, 140, 0.10) 55%, transparent 72%);
+  mix-blend-mode: screen;
+  animation: glow-breathe 4s ease-in-out infinite;
+}
+@keyframes glow-breathe {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+
 /* ---------- 圆：常驻但克制，静下来才变亮 ---------- */
 .ring {
   position: absolute;
@@ -387,6 +403,17 @@
 @keyframes hero-bob {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-2.5%); }
+}
+/* 他会望向画里能互动的地方 */
+.hero.lean-l { animation-name: hero-bob-l; }
+.hero.lean-r { animation-name: hero-bob-r; }
+@keyframes hero-bob-l {
+  0%, 100% { transform: translate(-5%, 0) rotate(-4deg); }
+  50% { transform: translate(-5%, -2.5%) rotate(-4deg); }
+}
+@keyframes hero-bob-r {
+  0%, 100% { transform: translate(5%, 0) rotate(4deg); }
+  50% { transform: translate(5%, -2.5%) rotate(4deg); }
 }
 
 /* 目的地的灯 */

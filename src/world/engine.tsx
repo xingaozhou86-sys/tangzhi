@@ -592,6 +592,22 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
               {Object.keys(p.layers[0].edges ?? {}).map(side => (
                 <i key={side} className={`leak side-${side} ${liveEdges.some(le => le.id === p.id && le.side === side) ? 'live' : ''}`} />
               ))}
+              {/* 画中微光：可交互处有一束画里的光，不是 UI，是画面的一部分 */}
+              {rings.map(({ s, spot }) => {
+                const c = viewToPanel(v, spot!.x + spot!.w / 2, spot!.y + spot!.h / 2)
+                if (!c.inside) return null
+                const zs = v.crop ? 100 / Math.min(v.crop.w, v.crop.h) : 1
+                return (
+                  <i
+                    key={`g-${s.id}`}
+                    className="glowspot"
+                    style={{
+                      left: `${c.x}%`, top: `${c.y}%`,
+                      width: `${spot!.w * zs * 1.5}%`, height: `${spot!.h * zs * 1.5}%`,
+                    }}
+                  />
+                )
+              })}
               {hint >= 1 && rings.map(({ s, spot }) => {
                 const m = viewToPanel(v, spot!.x + spot!.w / 2, spot!.y + spot!.h / 2)
                 if (!m.inside) return null
@@ -630,7 +646,11 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
               {hero && hero.panel === p.id && (() => {
                 const m = viewToPanel(v, hero.x, hero.y)
                 if (!m.inside) return null
-                return <div className="hero" style={{ left: `${m.x}%`, top: `${m.y}%` }} />
+                // 他会望向这幅画里当下可以互动的地方
+                const tgt = rings[0]?.spot
+                const dx = tgt ? tgt.x + tgt.w / 2 - hero.x : 0
+                const lean = dx < -8 ? ' lean-l' : dx > 8 ? ' lean-r' : ''
+                return <div className={`hero${lean}`} style={{ left: `${m.x}%`, top: `${m.y}%` }} />
               })()}
             </div>
           )
