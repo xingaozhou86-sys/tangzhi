@@ -293,7 +293,7 @@ export const CH6: ChapterDef = {
 // 头两扇窗里都不是她——第三扇窗里的世界，要亲手取出来。
 // ------------------------------------------------------------
 export const CH7: ChapterDef = {
-  id: 'ch7', no: '拾壹', name: '灯火', poem: '一千扇窗都是别人的。找到那一扇，把她取出来。', where: '二〇〇八 · 旧城夜色',
+  id: 'ch7', no: '拾壹', name: '灯火', poem: '找到那一扇，把她取出来，放回灯火里。', where: '二〇〇八 · 旧城夜色',
   ambient: '/story/amb-city.mp3',
   hero: { panel: 'city', x: 50, y: 84 },
   panels: [
@@ -328,6 +328,10 @@ export const CH7: ChapterDef = {
         img: '/story/fin-station.webp', tint: 'brightness(1.08)',
         spots: [{ id: 'figure', x: 50, y: 36, w: 24, h: 32 }] } } } },
     { id: 's-figure', cond: { kind: 'spot', panel: 'hope', spot: 'figure' }, after: ['d-w3'],
-      fx: { glow: 'hope', done: true, music: '/story/sfx-chime.mp3', sfx: '/story/sfx-chime.mp3' } },
+      fx: { glow: 'hope', sfx: '/story/sfx-chime.mp3' } },
+    { id: 'o-home', cond: { kind: 'overlay', a: 'hope', b: 'city' }, after: ['s-figure'],
+      fx: { burst: 'sun', burstPanel: 'city', sfx: '/story/sfx-chime.mp3', music: '/story/sfx-chime.mp3',
+        swapView: { panel: 'city', tint: 'brightness(1.18) saturate(1.05)' },
+        glow: 'city', done: true } },
   ],
 }

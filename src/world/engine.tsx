@@ -288,6 +288,7 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
       const ov = availNow().find(s => s.cond.kind === 'overlay' && s.cond.a === cur.id && s.cond.b === occupant.id)
       if (ov) {
         setPanels(prev => prev.filter(q => q.id !== cur.id))
+        if (heroRef.current?.panel === cur.id) setHero({ panel: occupant.id, x: 50, y: 68 })
         fire(ov)
         return
       }
@@ -535,7 +536,11 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
       <div className="board" ref={boardRef}>
         {([0, 1, 2, 3] as Cell[]).map(c => {
           const r = cellRect(c)
-          return <div key={`slot-${c}`} className="slot" style={{ left: `${r.x}%`, top: `${r.y}%`, width: `${r.w}%`, height: `${r.h}%` }} />
+          // 拖着一幅"里面有世界"的画悬在空框上时，空框会亮起来等你松手
+          const dp = drag ? panels.find(q => q.id === drag.id) : undefined
+          const hot = !!dp && hoverCell === c && dp.dive.length > 0 && !!dp.extractId
+            && !panels.some(q => q.id !== dp.id && q.cell === c)
+          return <div key={`slot-${c}`} className={`slot ${hot ? 'slot-hot' : ''}`} style={{ left: `${r.x}%`, top: `${r.y}%`, width: `${r.w}%`, height: `${r.h}%` }} />
         })}
 
         {linkedPairs.map((lp, i) => {
