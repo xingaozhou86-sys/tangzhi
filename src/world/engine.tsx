@@ -227,7 +227,7 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
           morphIn(fx.pushView.panel, q => {
             const top = q.dive[q.dive.length - 1]
             const intermediate = top && top.crop && !top.spots
-            return { ...q, dive: [...(intermediate ? q.dive.slice(0, -1) : q.dive), fx.pushView!.view] }
+            return { ...q, extractId: fx.pushView!.extractId, dive: [...(intermediate ? q.dive.slice(0, -1) : q.dive), fx.pushView!.view] }
           })
           if (heroRef.current?.panel === fx.pushView.panel) {
             setHero({ panel: fx.pushView.panel, x: 50, y: 74 })
@@ -291,6 +291,22 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
         fire(ov)
         return
       }
+    }
+
+    // 取出世界：钻进过深处的画拖到空框，里面的世界就立成一幅独立的画
+    if (!occupant && cur.dive.length > 0 && cur.extractId && !panelsRef.current.some(q => q.id === cur.extractId)) {
+      const v = curView(cur)
+      const nid = cur.extractId
+      setPanels(prev => prev
+        .map(q => q.id === cur.id ? { ...q, dive: q.dive.slice(0, -1), extractId: undefined } : q)
+        .concat({
+          id: nid, cell: target, dive: [], dim: false, lit: false, born: true,
+          layers: [{ img: v.img, edges: (v as { edges?: PanelDef['edges'] }).edges, tint: v.tint, year: v.year, spots: v.spots }],
+        }))
+      if (heroRef.current?.panel === cur.id) setHero({ panel: nid, x: 50, y: 70 })
+      play('/story/sfx-chime.mp3', 0.45)
+      poke()
+      return
     }
 
     // 揭画：撕掉的那一年直接飞走，不占格子
@@ -552,7 +568,7 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
           return (
             <div
               key={p.id}
-              className={`pnl ${p.lit ? 'lit' : ''} ${p.dim ? 'dim' : ''} ${p.born ? 'born' : ''} ${dragging ? 'drag' : ''} ${joined.includes(p.id) ? 'joined' : ''} ${resonance && (resonance.other === p.id || drag?.id === p.id) ? 'resonant' : ''}`}
+              className={`pnl ${p.lit ? 'lit' : ''} ${p.dim ? 'dim' : ''} ${p.born ? 'born' : ''} ${dragging ? 'drag' : ''} ${joined.includes(p.id) ? 'joined' : ''} ${resonance && (resonance.other === p.id || drag?.id === p.id) ? 'resonant' : ''} ${p.extractId && p.dive.length ? 'extractable' : ''}`}
               style={style}
               onPointerDown={e => onPanelDown(e, p)}
             >

@@ -44,6 +44,8 @@ export interface PanelState {
   layers: Layer[]
   /** 入画栈：栈顶 = 当前视野。空栈 = 看最上层整幅 */
   dive: View[]
+  /** 当前视野若可被取出，取出后的新画 id */
+  extractId?: string
   dim: boolean
   lit: boolean
   born?: boolean
@@ -63,8 +65,8 @@ export interface Fx {
   spawn?: { def: PanelDef; cells?: Cell[] }
   swap?: { panel: string; img: string; undim?: boolean }
   setEdges?: { panel: string; edges: Partial<Record<Side, string>> }
-  /** 传送门：这幅画变成另一个空间（入画栈压入新视野） */
-  pushView?: { panel: string; view: View }
+  /** 传送门：这幅画变成另一个空间；extractId = 里面的世界可以被拖出来成为独立的画 */
+  pushView?: { panel: string; view: Layer; extractId?: string }
   /** 当前视野换个样子（灯亮了、帘拉开了） */
   swapView?: { panel: string; img?: string; tint?: string; spots?: Spot[] }
   popView?: { panel: string }

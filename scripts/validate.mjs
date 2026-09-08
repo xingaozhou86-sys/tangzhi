@@ -20,6 +20,11 @@ for (const [name, def] of Object.entries(mod)) {
   const defs = new Map()
   for (const p of def.panels) defs.set(p.id, p)
   for (const s of def.steps) if (s.fx.spawn) defs.set(s.fx.spawn.def.id, s.fx.spawn.def)
+  // 可取出的世界 = 虚拟画
+  for (const s of def.steps) {
+    const pv = s.fx.pushView
+    if (pv?.extractId) defs.set(pv.extractId, { id: pv.extractId, img: pv.view.img, cell: 0, spots: pv.view.spots, layers: [pv.view] })
+  }
 
   // 每幅画可出现的所有视野里的 spot
   const spotsOf = new Map()
@@ -99,6 +104,7 @@ for (const [name, def] of Object.entries(mod)) {
       progress = true
       const fx = s.fx
       if (fx.spawn) present.add(fx.spawn.def.id)
+      if (fx.pushView?.extractId) present.add(fx.pushView.extractId)
       if (fx.setEdges) {
         const L = layersLeft.get(fx.setEdges.panel)
         L[0] = { ...L[0], edges: fx.setEdges.edges }

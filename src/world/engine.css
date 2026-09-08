@@ -538,3 +538,19 @@
   72% { opacity: 1; }
   100% { opacity: 0; transform: scale(0.96); }
 }
+
+/* ---------- 可取出世界的画：四角微微翘起，框在呼吸 ---------- */
+.pnl.extractable {
+  box-shadow:
+    0 0 0 2px #0e0904,
+    0 0 0 5px #4a3418,
+    0 0 0 6px rgba(255, 226, 160, 0.35),
+    0 0 0 9px #1c130a,
+    0 0 30px rgba(255, 206, 120, 0.35),
+    0 24px 48px rgba(0, 0, 0, 0.62);
+  animation: extract-breathe 2.4s ease-in-out infinite;
+}
+@keyframes extract-breathe {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.12); }
+}
