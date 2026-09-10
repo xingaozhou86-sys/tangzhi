@@ -150,8 +150,36 @@ export const CHX2: ChapterDef = {
   ],
 }
 
+// ------------------------------------------------------------
+// 伍 · 渡口：一幅画撕成两半挂在墙上，一块年画混在其中
+// 看出哪两块本是一幅 → 拼回去 → 江合上 → 他走过去 → 伞下是她
+// ------------------------------------------------------------
+export const CH2B: ChapterDef = {
+  id: 'ch2b', no: '伍', name: '渡口', poem: '一幅画撕成了两半。拼回去，过江。', where: '一九六二 · 渡口',
+  ambient: '/story/amb-city.mp3',
+  hero: { panel: 'bank-l', x: 22, y: 80 },
+  goal: 'bank-r',
+  panels: [
+    { id: 'bank-l', img: '/story/b5-left.webp', cell: 1, edges: { r: 'jiang' } },
+    { id: 'bank-r', img: '/story/b5-right.webp', cell: 2, edges: { l: 'jiang' },
+      spots: [{ id: 'umb', x: 58, y: 36, w: 24, h: 38 }] },
+    { id: 'poster', img: '/story/a3.webp', cell: 3, dim: true },
+  ],
+  steps: [
+    { id: 'c-join', cond: { kind: 'connect', a: 'bank-l', aside: 'r', b: 'bank-r' },
+      fx: { walk: true, sfx: '/story/sfx-chime.mp3' } },
+    { id: 'd-umb', cond: { kind: 'dive', panel: 'bank-r', spot: 'umb' }, after: ['c-join'],
+      fx: { sfx: '/story/sfx-peel.mp3', pushView: { panel: 'bank-r', view: {
+        img: '/story/b5-right.webp',
+        crop: { x: 44, y: 16, w: 52, h: 64 },
+        spots: [{ id: 'her', x: 62, y: 42, w: 18, h: 26 }] } } } },
+    { id: 's-her', cond: { kind: 'spot', panel: 'bank-r', spot: 'her' }, after: ['d-umb'],
+      fx: { burst: 'spark', burstPanel: 'bank-r', glow: 'bank-r', done: true, sfx: '/story/sfx-chime.mp3' } },
+  ],
+}
+
 export const CH3: ChapterDef = {
-  id: 'ch3', no: '伍', name: '流年', poem: '四面墙，四个年头。路对上了，人才走得过去。', where: '一九六一至七八 · 厂门口',
+  id: 'ch3', no: '陆', name: '流年', poem: '四面墙，四个年头。路对上了，人才走得过去。', where: '一九六一至七八 · 厂门口',
   ambient: '/story/amb-wind.mp3', weather: 'dust',
   hero: { panel: 'y1961', x: 50, y: 78 },
   goal: 'y1978',
@@ -192,7 +220,7 @@ export const CH3: ChapterDef = {
 }
 
 export const CHX3: ChapterDef = {
-  id: 'chx3', no: '陆', name: '站台', poem: '汽笛里有整条站台。取出来，替她系好围巾。', where: '一九七八 · 火车站台',
+  id: 'chx3', no: '柒', name: '站台', poem: '汽笛里有整条站台。取出来，替她系好围巾。', where: '一九七八 · 火车站台',
   ambient: '/sfx/train.wav',
   hero: { panel: 'platform', x: 36, y: 74 },
   goal: 'dawn',
@@ -226,7 +254,7 @@ export const CHX3: ChapterDef = {
 }
 
 export const CHX4: ChapterDef = {
-  id: 'chx4', no: '捌', name: '婚礼', poem: '门后面是他们的新房。取出来，擦亮，点烛。', where: '一九八〇 · 新房',
+  id: 'chx4', no: '玖', name: '婚礼', poem: '门后面是他们的新房。取出来，擦亮，点烛。', where: '一九八〇 · 新房',
   ambient: '/sfx/murmur.wav',
   hero: { panel: 'wedding', x: 50, y: 80 },
   panels: [
@@ -257,7 +285,7 @@ export const CHX4: ChapterDef = {
 }
 
 export const CH5: ChapterDef = {
-  id: 'ch5', no: '玖', name: '天台', poem: '喇叭里有一个新早晨。取出来，按响它。', where: '一九八三 · 楼顶天台',
+  id: 'ch5', no: '拾', name: '天台', poem: '喇叭里有一个新早晨。取出来，按响它。', where: '一九八三 · 楼顶天台',
   ambient: '/story/amb-hum.mp3',
   hero: { panel: 'roof', x: 40, y: 78 },
   goal: 'bikes',
@@ -301,7 +329,7 @@ export const CH5: ChapterDef = {
 // 取出相机 → 钻进镜头 → 按下快门 → 把回家的路铺上
 // ------------------------------------------------------------
 export const CH7B: ChapterDef = {
-  id: 'ch7b', no: '拾', name: '照相馆', poem: '橱窗里有一台相机。取出来，替她留一张相。', where: '一九八五 · 红星照相馆',
+  id: 'ch7b', no: '拾壹', name: '照相馆', poem: '橱窗里有一台相机。取出来，替她留一张相。', where: '一九八五 · 红星照相馆',
   ambient: '/story/amb-hum.mp3',
   hero: { panel: 'studio', x: 50, y: 80 },
   goal: 'home',
@@ -335,7 +363,7 @@ export const CH7B: ChapterDef = {
 }
 
 export const CH6: ChapterDef = {
-  id: 'ch6', no: '拾壹', name: '水果糖', poem: '糖在玻璃后面发光。拿出来，给孩子。', where: '一九八六 · 供销社',
+  id: 'ch6', no: '拾贰', name: '水果糖', poem: '糖在玻璃后面发光。拿出来，给孩子。', where: '一九八六 · 供销社',
   ambient: '/story/cicadas.mp3',
   hero: { panel: 'store', x: 24, y: 72 },
   goal: 'village',
@@ -379,7 +407,7 @@ export const CH6: ChapterDef = {
 // 头两扇窗里都不是她——第三扇窗里的世界，要亲手取出来。
 // ------------------------------------------------------------
 export const CH7: ChapterDef = {
-  id: 'ch7', no: '拾贰', name: '灯火', poem: '找到那一扇，把她取出来，放回灯火里。', where: '二〇〇八 · 旧城夜色',
+  id: 'ch7', no: '拾叁', name: '灯火', poem: '找到那一扇，把她取出来，放回灯火里。', where: '二〇〇八 · 旧城夜色',
   ambient: '/story/amb-city.mp3',
   hero: { panel: 'city', x: 50, y: 84 },
   panels: [
