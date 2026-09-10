@@ -41,6 +41,13 @@ export function Epilogue() {
   }, [i, phase])
 
   useEffect(() => {
+    if (!new URLSearchParams(window.location.search).has('auto')) return
+    if (phase !== 'station') return
+    const t = window.setTimeout(() => setPhase('dawn'), 1600)
+    return () => window.clearTimeout(t)
+  }, [phase])
+
+  useEffect(() => {
     if (phase !== 'dawn') return
     // 三十七年没响过的主题，在天亮这一刻用钢琴回来
     const a = new Audio('/sfx/theme.wav')

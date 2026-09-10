@@ -27,6 +27,19 @@ export function ActFour({ onDone }: { onDone: () => void }) {
     return () => { a.pause(); window.clearTimeout(idleRef.current) }
   }, [])
 
+  // 自演模式：自动签完这五个字
+  const autoDone = useRef(false)
+  useEffect(() => {
+    if (!new URLSearchParams(window.location.search).has('auto')) return
+    const t = window.setInterval(() => {
+      if (phase === 'floor') { poke(); setPhase('doc') }
+      else if (phase === 'doc') { if (!stamped) sign() }
+      else if (!autoDone.current) { autoDone.current = true; onDone() }
+    }, 1200)
+    return () => window.clearInterval(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, stamped, marks])
+
   const thud = (vol: number) => {
     const s = new Audio('/act4/thud.mp3')
     s.volume = vol

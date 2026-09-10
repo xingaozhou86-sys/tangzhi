@@ -472,33 +472,34 @@ export const CH6B: ChapterDef = {
 }
 
 // ------------------------------------------------------------
-// 拾伍 · 长卷：一幅三米长卷撕成三段，混了一块不相干的旧画
-// 读画排出顺序 → 两段接缝都合上 → 长卷完整 → 钻进她的画室
+// 拾伍 · 长卷：一幅长卷撕成两半，混了一块不相干的旧画
+// 拼回合缝 → 走进河街 → 巷子深处 → 钻进她的画室
 // ------------------------------------------------------------
 export const CH6C: ChapterDef = {
-  id: 'ch6c', no: '拾伍', name: '长卷', poem: '长卷撕成了三段。拼回去，找到那扇窗。', where: '一九九六 · 旧城拆迁',
+  id: 'ch6c', no: '拾伍', name: '长卷', poem: '长卷撕成了两半。拼回去，走到那扇窗。', where: '一九九六 · 旧城拆迁',
   ambient: '/story/amb-city.mp3',
-  hero: { panel: 's2', x: 50, y: 82 },
-  goal: 's3',
+  hero: { panel: 's1', x: 50, y: 82 },
+  goal: 's2',
   panels: [
-    { id: 's2', img: '/story/d1-2.webp', cell: 0, edges: { l: 'ju', r: 'jv' } },
+    { id: 's2', img: '/story/d1-2.webp', cell: 0, edges: { l: 'ju' },
+      spots: [{ id: 'lane', x: 84, y: 38, w: 16, h: 40 }] },
     { id: 'decoy', img: '/story/y1966.webp', cell: 1, dim: true },
-    { id: 's3', img: '/story/d1-3.webp', cell: 2, edges: { l: 'jv' },
-      spots: [{ id: 'win', x: 58, y: 10, w: 34, h: 44 }] },
-    { id: 's1', img: '/story/d1-1.webp', cell: 3, edges: { r: 'ju' } },
+    { id: 's1', img: '/story/d1-1.webp', cell: 2, edges: { r: 'ju' } },
   ],
   steps: [
     { id: 'c-a', cond: { kind: 'connect', a: 's1', aside: 'r', b: 's2' },
-      fx: { walk: true, sfx: '/story/sfx-chime.mp3' } },
-    { id: 'c-b', cond: { kind: 'connect', a: 's2', aside: 'r', b: 's3' }, after: ['c-a'],
-      fx: { walk: true, burst: 'sun', burstPanel: 's3', sfx: '/story/sfx-chime.mp3' } },
-    { id: 'd-win', cond: { kind: 'dive', panel: 's3', spot: 'win' }, after: ['c-b'],
-      fx: { sfx: '/story/sfx-peel.mp3', pushView: { panel: 's3', view: {
+      fx: { walk: true, burst: 'sun', burstPanel: 's2', sfx: '/story/sfx-chime.mp3' } },
+    { id: 'd-lane', cond: { kind: 'dive', panel: 's2', spot: 'lane' }, after: ['c-a'],
+      fx: { sfx: '/story/sfx-peel.mp3', pushView: { panel: 's2', view: {
+        img: '/story/d1-3.webp',
+        spots: [{ id: 'win', x: 58, y: 10, w: 34, h: 44 }] } } } },
+    { id: 'd-win', cond: { kind: 'dive', panel: 's2', spot: 'win' }, after: ['d-lane'],
+      fx: { sfx: '/story/sfx-peel.mp3', pushView: { panel: 's2', view: {
         img: '/story/d1-3.webp',
         crop: { x: 50, y: 2, w: 46, h: 56 },
         spots: [{ id: 'her', x: 64, y: 20, w: 20, h: 26 }] } } } },
-    { id: 's-her', cond: { kind: 'spot', panel: 's3', spot: 'her' }, after: ['d-win'],
-      fx: { burst: 'spark', burstPanel: 's3', glow: 's3', done: true, sfx: '/story/sfx-chime.mp3' } },
+    { id: 's-her', cond: { kind: 'spot', panel: 's2', spot: 'her' }, after: ['d-win'],
+      fx: { burst: 'spark', burstPanel: 's2', glow: 's2', done: true, sfx: '/story/sfx-chime.mp3' } },
   ],
 }
 

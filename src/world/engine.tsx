@@ -460,6 +460,67 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
     window.addEventListener('pointerup', up)
   }
 
+  // ---------- 自演模式（?auto=1）：像真人一样逐幕解谜，仅用于录制 ----------
+  useEffect(() => {
+    if (!new URLSearchParams(window.location.search).has('auto')) return
+    const BCELL: Record<Side, Cell> = { r: 1, l: 0, b: 2, t: 0 }
+    const center = (c: Cell) => { const r = cellRect(c); return { x: r.x + r.w / 2, y: r.y + r.h / 2 } }
+    const t = window.setInterval(() => {
+      const ps = panelsRef.current
+      const dn = doneRef.current
+      if (dn.size >= def.steps.length) return
+      const byId = (id: string) => ps.find(q => q.id === id)
+      const emptyCell = () => ([0, 1, 2, 3] as Cell[]).find(c => !ps.some(q => q.cell === c))
+      const availSteps = def.steps.filter(s => !dn.has(s.id) && (s.after ?? []).every(a => dn.has(a)))
+      // 先把该取出来的世界取出来
+      for (const s of availSteps) {
+        const c = s.cond as { panel?: string; a?: string }
+        for (const pid of [c.panel, c.a]) {
+          if (!pid || byId(pid)) continue
+          const holder = ps.find(q => q.extractId === pid && q.dive.length > 0)
+          if (holder) { const ec = emptyCell(); if (ec != null) { dropPanel(holder, center(ec)); return } }
+        }
+      }
+      const s = availSteps[0]
+      if (!s) return
+      const c = s.cond as never as { kind: string; panel: string; spot: string; a: string; b: string; aside: Side; order: string[]; cells: Cell[] }
+      if (c.kind === 'spot' || c.kind === 'dive') { clickSpot(c.panel, c.spot); return }
+      if (c.kind === 'peel') {
+        const p = byId(c.panel)
+        if (p) { const ec = ([0, 1, 2, 3] as Cell[]).find(x => x !== p.cell)!; dropPanel(p, center(ec)) }
+        return
+      }
+      if (c.kind === 'connect') {
+        const a = byId(c.a), b = byId(c.b)
+        if (!a || !b) return
+        const tgt = neighbor(a.cell, c.aside)
+        if (tgt == null) {
+          if (b.cell !== BCELL[c.aside]) { dropPanel(b, center(BCELL[c.aside])); return }
+          const ac = neighbor(b.cell, OPP[c.aside])
+          if (ac != null && a.cell !== ac) { dropPanel(a, center(ac as Cell)); return }
+          return
+        }
+        if (tgt !== b.cell) { dropPanel(b, center(tgt as Cell)); return }
+        return
+      }
+      if (c.kind === 'overlay') {
+        const a = byId(c.a), b = byId(c.b)
+        if (a && b) dropPanel(a, center(b.cell))
+        return
+      }
+      if (c.kind === 'arrange') {
+        setPanels(prev => prev.map(q => {
+          const i = c.order.indexOf(q.id)
+          return i >= 0 ? { ...q, cell: c.cells[i] } : q
+        }))
+        return
+      }
+      if (c.kind === 'back') { goBack(c.panel); return }
+    }, 1200)
+    return () => window.clearInterval(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   // ---------- 渲染数据 ----------
 
   const avail = def.steps.filter(s => !done.includes(s.id) && (s.after ?? []).every(a => done.includes(a)))
