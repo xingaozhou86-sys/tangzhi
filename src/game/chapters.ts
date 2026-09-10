@@ -433,11 +433,50 @@ export const CH6: ChapterDef = {
 }
 
 // ------------------------------------------------------------
-// 拾壹 · 灯火：多年后，他揣着糖纸在城里找那一扇窗
+// 拾肆 · 引光：全城停电，光要搬两次才到家
+// 路灯的火 → 叠进楼道 → 楼道的蜡烛 → 叠进家 → 孩子捧着光
+// ------------------------------------------------------------
+export const CH6B: ChapterDef = {
+  id: 'ch6b', no: '拾肆', name: '引光', poem: '全城停电。把光一路引回家。', where: '一九八七 · 停电的夜',
+  ambient: '/story/amb-wind.mp3', weather: 'snow',
+  hero: { panel: 'street', x: 50, y: 82 },
+  goal: 'home',
+  panels: [
+    { id: 'street', img: '/story/c1-lamp.webp', cell: 0,
+      spots: [{ id: 'flame', x: 36, y: 14, w: 14, h: 16 }] },
+    { id: 'corridor', img: '/story/c1-corridor.webp', cell: 1,
+      tint: 'brightness(0.38) saturate(0.6)',
+      spots: [{ id: 'candle', x: 42, y: 42, w: 12, h: 14 }] },
+    { id: 'home', img: '/story/c1-home.webp', cell: 2,
+      tint: 'brightness(0.38) saturate(0.6)',
+      spots: [{ id: 'kid', x: 18, y: 50, w: 24, h: 30 }] },
+  ],
+  steps: [
+    { id: 'd-flame', cond: { kind: 'dive', panel: 'street', spot: 'flame' },
+      fx: { sfx: '/story/sfx-peel.mp3', pushView: { panel: 'street', extractId: 'flame', view: {
+        img: '/story/c1-lamp.webp',
+        crop: { x: 28, y: 6, w: 30, h: 30 } } } } },
+    { id: 'o-cor', cond: { kind: 'overlay', a: 'flame', b: 'corridor' }, after: ['d-flame'],
+      fx: { burst: 'spark', burstPanel: 'corridor', sfx: '/story/sfx-chime.mp3',
+        swapView: { panel: 'corridor', tint: '' } } },
+    { id: 'd-candle', cond: { kind: 'dive', panel: 'corridor', spot: 'candle' }, after: ['o-cor'],
+      fx: { sfx: '/story/sfx-peel.mp3', pushView: { panel: 'corridor', extractId: 'flame2', view: {
+        img: '/story/c1-corridor.webp',
+        crop: { x: 36, y: 34, w: 26, h: 26 } } } } },
+    { id: 'o-home', cond: { kind: 'overlay', a: 'flame2', b: 'home' }, after: ['d-candle'],
+      fx: { burst: 'spark', burstPanel: 'home', sfx: '/story/sfx-chime.mp3',
+        swapView: { panel: 'home', tint: '' }, glow: 'home' } },
+    { id: 's-kid', cond: { kind: 'spot', panel: 'home', spot: 'kid' }, after: ['o-home'],
+      fx: { done: true, sfx: '/story/sfx-chime.mp3' } },
+  ],
+}
+
+// ------------------------------------------------------------
+// 拾伍 · 灯火：多年后，他揣着糖纸在城里找那一扇窗
 // 头两扇窗里都不是她——第三扇窗里的世界，要亲手取出来。
 // ------------------------------------------------------------
 export const CH7: ChapterDef = {
-  id: 'ch7', no: '拾肆', name: '灯火', poem: '找到那一扇，把她取出来，放回灯火里。', where: '二〇〇八 · 旧城夜色',
+  id: 'ch7', no: '拾伍', name: '灯火', poem: '找到那一扇，把她取出来，放回灯火里。', where: '二〇〇八 · 旧城夜色',
   ambient: '/story/amb-city.mp3',
   hero: { panel: 'city', x: 50, y: 84 },
   panels: [
