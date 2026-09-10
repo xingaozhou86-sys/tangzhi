@@ -257,6 +257,7 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
           return { ...q, dive: [...q.dive.slice(0, -1), { ...top, img: fx.swapView!.img ?? top.img, tint: fx.swapView!.tint ?? top.tint, spots: fx.swapView!.spots ?? top.spots }] }
         })
         if (fx.collect) {
+          play('/sfx/pencil.wav', 0.35)
           const id = ++flySeq.current
           setFlies(fs => [...fs, id])
           window.setTimeout(() => setFlies(fs => fs.filter(f => f !== id)), 1300)
@@ -614,7 +615,7 @@ export function Board({ def, onDone, onCollect }: { def: ChapterDef; onDone: () 
           return (
             <div
               key={p.id}
-              className={`pnl ${p.lit ? 'lit' : ''} ${p.dim ? 'dim' : ''} ${p.born ? 'born' : ''} ${dragging ? 'drag' : ''} ${joined.includes(p.id) ? 'joined' : ''} ${focus === p.id ? 'focus' : ''} ${resonance && (resonance.other === p.id || drag?.id === p.id) ? 'resonant' : ''} ${p.extractId && p.dive.length ? 'extractable' : ''}`}
+              className={`pnl ${p.lit ? 'lit' : ''} ${p.dim ? 'dim' : ''} ${p.born ? 'born' : ''} ${dragging ? 'drag' : ''} ${joined.includes(p.id) ? 'joined' : ''} ${focus === p.id ? 'focus' : ''} ${resonance && (resonance.other === p.id || drag?.id === p.id) ? 'resonant' : ''} ${p.extractId && p.dive.length ? 'extractable' : ''} ${hint >= 1 && !dragging && p.extractId && p.dive.length ? 'tug' : ''}`}
               style={style}
               onPointerDown={e => onPanelDown(e, p)}
               onPointerMove={e => {

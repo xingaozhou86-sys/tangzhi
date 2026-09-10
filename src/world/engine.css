@@ -733,3 +733,10 @@
   14% { opacity: 1; transform: translate(0, -3vh) scale(1) rotate(-6deg); }
   100% { transform: translate(0, 52vh) scale(0.42) rotate(-30deg); opacity: 0.9; }
 }
+
+/* ---------- 拖拽示范：可取出的画等久了，自己朝空框方向够一下 ---------- */
+.pnl.tug { animation: tug-hint 2.4s ease-in-out infinite; }
+@keyframes tug-hint {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(4.5%, 4.5%); }
+}
