@@ -284,8 +284,38 @@ export const CHX4: ChapterDef = {
   ],
 }
 
+// ------------------------------------------------------------
+// 拾 · 月夜：她的窗是黑的，天上有一轮月亮
+// 把月亮摘下来（取出来），挂进她的窗（叠上去）——窗就亮了
+// ------------------------------------------------------------
+export const CH5B: ChapterDef = {
+  id: 'ch5b', no: '拾', name: '月夜', poem: '她的窗是黑的。把月亮摘下来，挂进去。', where: '一九八一 · 她下夜班',
+  ambient: '/story/amb-hum.mp3',
+  hero: { panel: 'sky', x: 26, y: 82 },
+  goal: 'win2',
+  panels: [
+    { id: 'sky', img: '/story/b9-sky.webp', cell: 0,
+      spots: [{ id: 'moon', x: 55, y: 8, w: 34, h: 36 }] },
+    { id: 'win2', img: '/story/b9-lit.webp', cell: 1,
+      tint: 'brightness(0.42) saturate(0.65)',
+      spots: [{ id: 'her', x: 52, y: 44, w: 20, h: 22 }] },
+  ],
+  steps: [
+    { id: 'd-moon', cond: { kind: 'dive', panel: 'sky', spot: 'moon' },
+      fx: { sfx: '/story/sfx-peel.mp3', pushView: { panel: 'sky', extractId: 'moon', view: {
+        img: '/story/b9-sky.webp',
+        crop: { x: 50, y: 2, w: 46, h: 46 } } } } },
+    { id: 'o-light', cond: { kind: 'overlay', a: 'moon', b: 'win2' }, after: ['d-moon'],
+      fx: { burst: 'spark', burstPanel: 'win2', sfx: '/story/sfx-chime.mp3',
+        swapView: { panel: 'win2', img: '/story/b9-lit.webp', tint: '' },
+        glow: 'win2' } },
+    { id: 's-her', cond: { kind: 'spot', panel: 'win2', spot: 'her' }, after: ['o-light'],
+      fx: { done: true, sfx: '/story/sfx-chime.mp3' } },
+  ],
+}
+
 export const CH5: ChapterDef = {
-  id: 'ch5', no: '拾', name: '天台', poem: '喇叭里有一个新早晨。取出来，按响它。', where: '一九八三 · 楼顶天台',
+  id: 'ch5', no: '拾壹', name: '天台', poem: '喇叭里有一个新早晨。取出来，按响它。', where: '一九八三 · 楼顶天台',
   ambient: '/story/amb-hum.mp3',
   hero: { panel: 'roof', x: 40, y: 78 },
   goal: 'bikes',
@@ -329,7 +359,7 @@ export const CH5: ChapterDef = {
 // 取出相机 → 钻进镜头 → 按下快门 → 把回家的路铺上
 // ------------------------------------------------------------
 export const CH7B: ChapterDef = {
-  id: 'ch7b', no: '拾壹', name: '照相馆', poem: '橱窗里有一台相机。取出来，替她留一张相。', where: '一九八五 · 红星照相馆',
+  id: 'ch7b', no: '拾贰', name: '照相馆', poem: '橱窗里有一台相机。取出来，替她留一张相。', where: '一九八五 · 红星照相馆',
   ambient: '/story/amb-hum.mp3',
   hero: { panel: 'studio', x: 50, y: 80 },
   goal: 'home',
@@ -363,7 +393,7 @@ export const CH7B: ChapterDef = {
 }
 
 export const CH6: ChapterDef = {
-  id: 'ch6', no: '拾贰', name: '水果糖', poem: '糖在玻璃后面发光。拿出来，给孩子。', where: '一九八六 · 供销社',
+  id: 'ch6', no: '拾叁', name: '水果糖', poem: '糖在玻璃后面发光。拿出来，给孩子。', where: '一九八六 · 供销社',
   ambient: '/story/cicadas.mp3',
   hero: { panel: 'store', x: 24, y: 72 },
   goal: 'village',
@@ -407,7 +437,7 @@ export const CH6: ChapterDef = {
 // 头两扇窗里都不是她——第三扇窗里的世界，要亲手取出来。
 // ------------------------------------------------------------
 export const CH7: ChapterDef = {
-  id: 'ch7', no: '拾叁', name: '灯火', poem: '找到那一扇，把她取出来，放回灯火里。', where: '二〇〇八 · 旧城夜色',
+  id: 'ch7', no: '拾肆', name: '灯火', poem: '找到那一扇，把她取出来，放回灯火里。', where: '二〇〇八 · 旧城夜色',
   ambient: '/story/amb-city.mp3',
   hero: { panel: 'city', x: 50, y: 84 },
   panels: [
