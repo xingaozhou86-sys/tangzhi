@@ -472,11 +472,42 @@ export const CH6B: ChapterDef = {
 }
 
 // ------------------------------------------------------------
-// 拾伍 · 灯火：多年后，他揣着糖纸在城里找那一扇窗
+// 拾伍 · 长卷：一幅三米长卷撕成三段，混了一块不相干的旧画
+// 读画排出顺序 → 两段接缝都合上 → 长卷完整 → 钻进她的画室
+// ------------------------------------------------------------
+export const CH6C: ChapterDef = {
+  id: 'ch6c', no: '拾伍', name: '长卷', poem: '长卷撕成了三段。拼回去，找到那扇窗。', where: '一九九六 · 旧城拆迁',
+  ambient: '/story/amb-city.mp3',
+  hero: { panel: 's2', x: 50, y: 82 },
+  goal: 's3',
+  panels: [
+    { id: 's2', img: '/story/d1-2.webp', cell: 0, edges: { l: 'ju', r: 'jv' } },
+    { id: 'decoy', img: '/story/y1966.webp', cell: 1, dim: true },
+    { id: 's3', img: '/story/d1-3.webp', cell: 2, edges: { l: 'jv' },
+      spots: [{ id: 'win', x: 58, y: 10, w: 34, h: 44 }] },
+    { id: 's1', img: '/story/d1-1.webp', cell: 3, edges: { r: 'ju' } },
+  ],
+  steps: [
+    { id: 'c-a', cond: { kind: 'connect', a: 's1', aside: 'r', b: 's2' },
+      fx: { walk: true, sfx: '/story/sfx-chime.mp3' } },
+    { id: 'c-b', cond: { kind: 'connect', a: 's2', aside: 'r', b: 's3' }, after: ['c-a'],
+      fx: { walk: true, burst: 'sun', burstPanel: 's3', sfx: '/story/sfx-chime.mp3' } },
+    { id: 'd-win', cond: { kind: 'dive', panel: 's3', spot: 'win' }, after: ['c-b'],
+      fx: { sfx: '/story/sfx-peel.mp3', pushView: { panel: 's3', view: {
+        img: '/story/d1-3.webp',
+        crop: { x: 50, y: 2, w: 46, h: 56 },
+        spots: [{ id: 'her', x: 64, y: 20, w: 20, h: 26 }] } } } },
+    { id: 's-her', cond: { kind: 'spot', panel: 's3', spot: 'her' }, after: ['d-win'],
+      fx: { burst: 'spark', burstPanel: 's3', glow: 's3', done: true, sfx: '/story/sfx-chime.mp3' } },
+  ],
+}
+
+// ------------------------------------------------------------
+// 拾陆 · 灯火：多年后，他揣着糖纸在城里找那一扇窗
 // 头两扇窗里都不是她——第三扇窗里的世界，要亲手取出来。
 // ------------------------------------------------------------
 export const CH7: ChapterDef = {
-  id: 'ch7', no: '拾伍', name: '灯火', poem: '找到那一扇，把她取出来，放回灯火里。', where: '二〇〇八 · 旧城夜色',
+  id: 'ch7', no: '拾陆', name: '灯火', poem: '找到那一扇，把她取出来，放回灯火里。', where: '二〇〇八 · 旧城夜色',
   ambient: '/story/amb-city.mp3',
   hero: { panel: 'city', x: 50, y: 84 },
   panels: [
