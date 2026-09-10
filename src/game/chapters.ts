@@ -105,7 +105,7 @@ export const CH2: ChapterDef = {
       fx: { walk: true, sfx: '/story/sfx-chime.mp3' } },
     { id: 's-lantern', cond: { kind: 'spot', panel: 'windows', spot: 'lantern' }, after: ['c-win'],
       fx: { burst: 'spark', burstPanel: 'windows', sfx: '/story/sfx-chime.mp3',
-        swapView: { panel: 'windows', tint: 'brightness(1.18) sepia(0.2)' } } },
+        swapView: { panel: 'windows', img: '/story/a2-windows-lit.webp' } } },
     { id: 'd-lantern', cond: { kind: 'dive', panel: 'windows', spot: 'lantern' }, after: ['s-lantern'],
       fx: { sfx: '/story/sfx-peel.mp3',
         pushView: { panel: 'windows', extractId: 'rest', view: {
@@ -288,8 +288,46 @@ export const CH5: ChapterDef = {
   ],
 }
 
+// ------------------------------------------------------------
+// 拾 · 照相馆：橱窗里有一台相机，镜头里是他们俩
+// 取出相机 → 钻进镜头 → 按下快门 → 把回家的路铺上
+// ------------------------------------------------------------
+export const CH7B: ChapterDef = {
+  id: 'ch7b', no: '拾', name: '照相馆', poem: '橱窗里有一台相机。取出来，替她留一张相。', where: '一九八五 · 红星照相馆',
+  ambient: '/story/amb-hum.mp3',
+  hero: { panel: 'studio', x: 50, y: 80 },
+  goal: 'home',
+  panels: [
+    {
+      id: 'studio', img: '/story/b7-photo.webp', cell: 0,
+      spots: [{ id: 'door', x: 66, y: 26, w: 30, h: 64 }],
+    },
+  ],
+  steps: [
+    { id: 'd-door', cond: { kind: 'dive', panel: 'studio', spot: 'door' },
+      fx: { sfx: '/story/sfx-peel.mp3', pushView: { panel: 'studio', extractId: 'camera', view: {
+        img: '/story/b7-camera.webp',
+        edges: { r: 'hui' },
+        spots: [{ id: 'lens', x: 40, y: 30, w: 18, h: 16 }] } } } },
+    { id: 'd-lens', cond: { kind: 'dive', panel: 'camera', spot: 'lens' }, after: ['d-door'],
+      fx: { sfx: '/story/sfx-peel.mp3', pushView: { panel: 'camera', view: {
+        img: '/story/b7-couple.webp',
+        spots: [{ id: 'smile', x: 40, y: 32, w: 34, h: 40 }] } } } },
+    { id: 's-smile', cond: { kind: 'spot', panel: 'camera', spot: 'smile' }, after: ['d-lens'],
+      fx: { burst: 'spark', burstPanel: 'camera', sfx: '/story/sfx-chime.mp3', spawn: {
+        def: { id: 'home', img: '/story/a2-street.webp', cell: 3, edges: { l: 'hui' },
+          tint: 'brightness(1.12) sepia(0.18)',
+          spots: [{ id: 'gate', x: 56, y: 10, w: 34, h: 56 }] },
+        cells: [3, 2, 1] } } },
+    { id: 'c-home', cond: { kind: 'connect', a: 'camera', aside: 'r', b: 'home' }, after: ['s-smile'],
+      fx: { walk: true, sfx: '/story/sfx-chime.mp3' } },
+    { id: 's-gate', cond: { kind: 'spot', panel: 'home', spot: 'gate' }, after: ['c-home'],
+      fx: { glow: 'home', done: true, sfx: '/story/sfx-chime.mp3' } },
+  ],
+}
+
 export const CH6: ChapterDef = {
-  id: 'ch6', no: '拾', name: '水果糖', poem: '糖在玻璃后面发光。拿出来，给孩子。', where: '一九八六 · 供销社',
+  id: 'ch6', no: '拾壹', name: '水果糖', poem: '糖在玻璃后面发光。拿出来，给孩子。', where: '一九八六 · 供销社',
   ambient: '/story/cicadas.mp3',
   hero: { panel: 'store', x: 24, y: 72 },
   goal: 'village',
@@ -331,7 +369,7 @@ export const CH6: ChapterDef = {
 // 头两扇窗里都不是她——第三扇窗里的世界，要亲手取出来。
 // ------------------------------------------------------------
 export const CH7: ChapterDef = {
-  id: 'ch7', no: '拾壹', name: '灯火', poem: '找到那一扇，把她取出来，放回灯火里。', where: '二〇〇八 · 旧城夜色',
+  id: 'ch7', no: '拾贰', name: '灯火', poem: '找到那一扇，把她取出来，放回灯火里。', where: '二〇〇八 · 旧城夜色',
   ambient: '/story/amb-city.mp3',
   hero: { panel: 'city', x: 50, y: 84 },
   panels: [
@@ -369,7 +407,7 @@ export const CH7: ChapterDef = {
       fx: { glow: 'hope', sfx: '/story/sfx-chime.mp3' } },
     { id: 'o-home', cond: { kind: 'overlay', a: 'hope', b: 'city' }, after: ['s-figure'],
       fx: { burst: 'sun', burstPanel: 'city', sfx: '/story/sfx-chime.mp3', music: '/story/sfx-chime.mp3',
-        swapView: { panel: 'city', tint: 'brightness(1.18) saturate(1.05)' },
+        swapView: { panel: 'city', img: '/story/a7-lit.webp' },
         glow: 'city', done: true } },
   ],
 }
