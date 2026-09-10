@@ -66,6 +66,43 @@ export default function Game() {
     }).catch(() => {})
   }
 
+  // 一声响之后，音乐退场——直到终幕天才亮
+  const stopScore = () => {
+    const a = scoreRef.current
+    if (!a) return
+    scoreRef.current = null
+    const t = window.setInterval(() => {
+      a.volume = Math.max(0, a.volume - 0.02)
+      if (a.volume <= 0) { a.pause(); window.clearInterval(t) }
+    }, 120)
+  }
+
+  useEffect(() => {
+    if (stage?.kind === 'act4') stopScore()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idx])
+
+  // 幕卡亮起的 2.6 秒里，把下一幕的画全部预载——转场永远不掉帧
+  useEffect(() => {
+    if (!card || idx + 1 >= STAGES.length) return
+    const next = STAGES[idx + 1]
+    const urls = new Set<string>()
+    if (next.kind === 'chapter') {
+      const def = next.def
+      for (const p of def.panels) { urls.add(p.img); for (const l of p.layers ?? []) urls.add(l.img) }
+      for (const s of def.steps) {
+        const fx = s.fx
+        if (fx.pushView) { urls.add(fx.pushView.view.img); if (fx.pushView.view.under) urls.add(fx.pushView.view.under.img) }
+        if (fx.spawn) urls.add(fx.spawn.def.img)
+        if (fx.swap) urls.add(fx.swap.img)
+        if (fx.swapView?.img) urls.add(fx.swapView.img)
+      }
+    } else if (next.kind === 'act4') {
+      urls.add('/act4/workshop.webp'); urls.add('/act4/room.webp')
+    }
+    urls.forEach(u => { const im = new Image(); im.src = u })
+  }, [card, idx])
+
   const advance = () => {
     startScore()
     setCard(true)

@@ -44,7 +44,8 @@ export function ActFour({ onDone }: { onDone: () => void }) {
     if (n >= 5) {
       setStamped(true)
       window.setTimeout(() => thud(0.9), 500)
-      window.setTimeout(() => setPhase('after'), 2400)
+      // 章落下之后，让他和那五个字单独待一会儿
+      window.setTimeout(() => setPhase('after'), 4500)
     }
   }
 

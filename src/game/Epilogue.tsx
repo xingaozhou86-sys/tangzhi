@@ -42,6 +42,18 @@ export function Epilogue() {
 
   useEffect(() => {
     if (phase !== 'dawn') return
+    // 三十七年没响过的主题，在天亮这一刻用钢琴回来
+    const a = new Audio('/sfx/theme.wav')
+    a.loop = true
+    a.volume = 0
+    a.play().then(() => {
+      let v = 0
+      const t = window.setInterval(() => {
+        v = Math.min(0.18, v + 0.008)
+        a.volume = v
+        if (v >= 0.18) window.clearInterval(t)
+      }, 200)
+    }).catch(() => {})
     const t = window.setTimeout(() => setPhase('end'), 3400)
     return () => window.clearTimeout(t)
   }, [phase])
